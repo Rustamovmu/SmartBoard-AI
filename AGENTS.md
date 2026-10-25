@@ -6,19 +6,20 @@ Before changes, read the relevant source and these documents:
 
 - [Backend plan](docs/Backend_plan.md).
 - [Frontend and mobile plan](docs/Frontend_plan.md).
-- [README](README.md), [package scripts](package.json), and the relevant source, configuration and tests. The README is currently NestJS starter documentation, not a product implementation or acceptance record.
+- [README](README.md), [package scripts](package.json), [development progress](docs/Development_progress.md), and the relevant source, configuration and tests. Use dated verification records for implemented scope, not target plans as acceptance evidence.
 
-The plans describe the agreed V2 target. This repository currently contains a root-level NestJS starter, not the legacy FastAPI/Vite application described in the plans. Historical MVP descriptions and results do not establish what is implemented here. The companion links inside the plans still use older V2 filenames; use the actual plan paths above and report stale links rather than assuming those files exist.
+The plans describe the agreed V2 target. This repository is being developed incrementally from a root-level NestJS starter, not the legacy FastAPI/Vite application described in the plans. Historical MVP descriptions and results do not establish what is implemented here. Use the actual plan paths above; their companion links were corrected during B1.
 
 The user's latest explicit requirements take precedence over older plans. In particular, earlier server-primary storage decisions and the MVP's no-database/no-authentication rules have been superseded for V2. Use source code to establish current behavior and the latest plans to establish intended behavior. Report discrepancies rather than claiming planned features already work.
 
 ## Current repository and implementation
 
 - Working backend project: `/Users/a1234/Developer/SmartBord-AI`, package name `smartbord-ai`. Source lives directly under `src/`; there is no implemented `apps/api/` layout here.
-- Entry point: `src/main.ts` creates `AppModule` from `src/app.module.ts` and listens on `PORT`, defaulting to 3000. The plan's NestJS port 4000 is a future development convention, not the current default. Do not change ports as part of documentation work.
-- `src/app.controller.ts` delegates `GET /` to `src/app.service.ts`, which returns `Hello World!`. The root module currently imports no feature modules.
+- Entry point: `src/main.ts` creates `AppModule` from `src/app.module.ts`, enables shutdown hooks and listens on validated `PORT`/`HOST`, defaulting to `127.0.0.1:3000`. The plan's NestJS port 4000 is an optional development convention, not the current default. Do not change ports as part of documentation work.
+- `src/app.controller.ts` delegates `GET /` to `src/app.service.ts`, which returns `Hello World!`. The root module imports configuration and health modules and registers a safe HTTP error filter.
 - `src/app.controller.spec.ts` is the starter unit test; `test/app.e2e-spec.ts` is the starter Supertest endpoint test. Their configuration is in `jest.config.ts` and `test/jest-e2e.json`.
-- MongoDB/Mongoose, authentication, enrollment, GraphQL/Apollo, analysis/control WebSockets, health routes, Python vision, and user/admin platform modules are planned, not implemented here.
+- B1 implements configuration validation, `GET /health/live` (200), `GET /health/ready` (503 until dependencies exist), safe HTTP errors and versioned policy/contracts. See `src/contracts/` and `contracts/`; declared future routes/limits do not activate services. No GraphQL schema exists yet.
+- MongoDB/Mongoose, authentication, enrollment, GraphQL/Apollo, analysis/control WebSockets, Python vision, and user/admin platform modules are planned, not implemented here.
 - Next.js, React/Vite/Capacitor, native recording, SQLite and device-file adapters belong to the separate planned frontend project. No frontend/mobile target or Python vision service currently exists in this repository.
 - The following implementation rules describe required future behavior. A rule, dependency, schema, starter test or plan is not evidence that a feature works. Reinspect source before updating this baseline.
 

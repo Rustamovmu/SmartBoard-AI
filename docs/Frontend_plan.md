@@ -2,7 +2,7 @@
 
 Status: revised planning specification. This replaces the earlier server-primary/PWA-download plan. The current application has not yet been rebuilt to implement it.
 
-Companion: [BACKEND_V2_PLAN.md](BACKEND_V2_PLAN.md). The product has two repositories: whiteboard-backend and whiteboard-frontend. The frontend repository contains website and mobile build targets.
+Companion: [Backend_plan.md](Backend_plan.md). Backend and frontend are separate projects; the directory names below are target examples. The frontend implementation location has not yet been established. Its planned repository contains website and mobile build targets.
 
 ## 1. Non-negotiable behavior
 

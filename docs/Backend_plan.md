@@ -1,8 +1,8 @@
 # Backend plan: device-owned whiteboard recordings
 
-Status: revised planning specification. This replaces the earlier server-primary plan. It does not describe the existing single-user implementation, which still stores files on the development Mac.
+Status: revised planning specification. This replaces the earlier server-primary plan. This repository is being developed incrementally from a root-level NestJS starter; see [development progress](Development_progress.md) for implemented behavior. Historical single-user Mac storage is not implemented here.
 
-Companion: [FRONTEND_V2_PLAN.md](FRONTEND_V2_PLAN.md). Keep two separate repositories: whiteboard-backend and whiteboard-frontend.
+Companion: [Frontend_plan.md](Frontend_plan.md). Keep backend and frontend in separate repositories. The directory names below are target examples; this backend currently remains at its root-level `src/` layout.
 
 ## 1. Mandatory storage rule
 

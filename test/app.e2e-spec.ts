@@ -3,17 +3,18 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { FORBIDDEN_HTTP_PATHS } from '../src/contracts/platform-v1';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await app.listen(0, '127.0.0.1');
   });
 
   it('/ (GET)', () => {
@@ -23,7 +24,49 @@ describe('AppController (e2e)', () => {
       .expect('Hello World!');
   });
 
-  afterEach(async () => {
+  it('reports process liveness without claiming platform readiness', async () => {
+    await request(app.getHttpServer())
+      .get('/health/live')
+      .expect('Cache-Control', 'no-store')
+      .expect(200, { status: 'ok' });
+
+    await request(app.getHttpServer())
+      .get('/health/ready')
+      .expect('Cache-Control', 'no-store')
+      .expect(503, {
+        status: 'not_ready',
+        checks: { platformDatabase: 'not_implemented' },
+      });
+  });
+
+  it.each(FORBIDDEN_HTTP_PATHS)(
+    'does not expose private-content endpoint %s',
+    async (path) => {
+      for (const method of ['get', 'post', 'delete'] as const) {
+        await request(app.getHttpServer())
+          [method](path)
+          .expect('Cache-Control', 'no-store')
+          .expect(404, {
+            statusCode: 404,
+            code: 'NOT_FOUND',
+            message: 'Route not found.',
+          });
+      }
+    },
+  );
+
+  it('does not echo paths, queries, or bodies into errors', async () => {
+    await request(app.getHttpServer())
+      .post('/lectures/synthetic-private-title?token=synthetic-secret')
+      .send({ note: 'synthetic-private-note' })
+      .expect(404, {
+        statusCode: 404,
+        code: 'NOT_FOUND',
+        message: 'Route not found.',
+      });
+  });
+
+  afterAll(async () => {
     await app.close();
   });
 });
