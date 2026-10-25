@@ -10,6 +10,8 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
+import { getConnectionToken } from '@nestjs/mongoose';
+import { createConnectionStub } from './helpers/connection-stub';
 
 // Only registered in this test app, never in the production module.
 @Controller('synthetic-error')
@@ -37,7 +39,10 @@ describe('safe HTTP errors (e2e)', () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
       controllers: [SyntheticErrorController],
-    }).compile();
+    })
+      .overrideProvider(getConnectionToken())
+      .useValue(createConnectionStub())
+      .compile();
     app = module.createNestApplication();
     await app.listen(0, '127.0.0.1');
   });

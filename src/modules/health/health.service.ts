@@ -1,16 +1,22 @@
 import { Injectable } from '@nestjs/common';
+import { DatabaseService } from '../../database/database.service';
 
 @Injectable()
 export class HealthService {
+  constructor(private readonly database: DatabaseService) {}
+
   getLiveness() {
     return { status: 'ok' as const };
   }
 
-  getReadiness() {
-    // Fail closed until B2 supplies a real platform-database readiness check.
+  async getReadiness() {
+    const checks = await this.database.checkHealth();
     return {
-      status: 'not_ready' as const,
-      checks: { platformDatabase: 'not_implemented' as const },
+      status:
+        checks.platformDatabase === 'up' && checks.transactions === 'supported'
+          ? ('ready' as const)
+          : ('not_ready' as const),
+      checks,
     };
   }
 }

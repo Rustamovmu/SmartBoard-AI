@@ -9,12 +9,12 @@ Development follows [the backend plan](docs/Backend_plan.md), [frontend/mobile p
 - Root-level `src/` project; Node.js 24, npm and the committed lockfile.
 - `GET /` still returns `Hello World!` for starter compatibility.
 - `GET /health/live` reports process liveness.
-- `GET /health/ready` deliberately returns 503 until platform dependencies are implemented.
+- `GET /health/ready` returns 200 only when bounded database probes succeed and transaction topology is supported; otherwise 503.
 - Validated `PORT`, `HOST` and `NODE_ENV`; default address `127.0.0.1:3000`.
 - Safe HTTP error responses with no request bodies, URLs, exception messages or stacks in the response. Unexpected failures log only a fixed message and status code.
 - [Versioned contracts](src/contracts/platform-v1.ts), [storage policy](contracts/storage-policy.md), [analysis lifecycle](contracts/live-protocol.md), and [errors](contracts/errors.md).
 
-MongoDB, accounts/authentication, enrollment, GraphQL, WebSockets and Python vision are not implemented. No frontend/native target exists here. Contract constants describe required future behavior, including analysis limits; they do not activate those services. No GraphQL schema is published until real resolvers exist.
+Mongoose connection management and read-only database diagnostics are implemented. Accounts/authentication, enrollment, GraphQL, WebSockets and Python vision are not implemented. No frontend/native target exists here. Contract constants describe required future behavior, including analysis limits; they do not activate those services. No GraphQL schema is published until real resolvers exist. Database readiness does not mean these future features are complete.
 
 ## Setup and operation
 
@@ -24,9 +24,9 @@ npm run build
 npm run start:prod
 ```
 
-These commands start a foreground server; use Ctrl-C to stop it. The application enables shutdown hooks. Only start it when needed. No development host is left running by implementation tests.
+Provide database configuration first. These commands start a foreground server; use Ctrl-C to stop it. Shutdown hooks close the app-owned database connection. Only start the host when needed. No development host is left running by implementation tests.
 
-The process reads environment variables. It does **not** automatically load `.env`. See [.env.example](.env.example); preserve any existing ignored `.env` and add settings selectively. To explicitly load that file after building:
+The npm start variants and database diagnostic load `.env` if present; existing process environment variables take precedence. See [.env.example](.env.example); preserve existing settings. To load that file explicitly after building:
 
 ```bash
 node --env-file=.env dist/main.js
@@ -48,10 +48,22 @@ npm run build
 
 There is no npm `typecheck` script. `lint` is non-fixing. Build creates ignored `dist/` output. `format` rewrites source and is not an inspection command. E2E apps bind temporary loopback ports and close their own servers.
 
-Tests currently cover starter behavior, configuration, contract agreement between the plans, health responses, safe errors and representative forbidden private-content endpoints. They do not prove future database/authentication, native storage, real camera/model behavior, or deployment-wide RAM-only handling.
+Tests currently cover starter behavior, configuration, contract agreement between the plans, health responses, safe errors, representative forbidden private-content endpoints and database lifecycle/configuration safety. HTTP tests override the connection with explicit synthetic stubs; they never load `.env` or contact the application database. They do not prove database CRUD permissions, real transactions, future authentication, native storage, real camera/model behavior, or deployment-wide RAM-only handling.
 
-## Database and next milestone
+## Database
 
-B2 will use the user's new dedicated `SmartBoardAI` platform MongoDB database, configured in the ignored `.env` through `MONGO_DEV`. Replica-set support must be confirmed before transactions; tests will use separate disposable databases. No other project's records will be used as fixtures. The B1 application does not yet consume the database setting. Never paste or commit database credentials.
+The dedicated database is `SmartBoardAI`. Set `MONGODB_URI` in ignored local configuration; development also accepts the existing `MONGO_DEV` key. Production requires `MONGODB_URI`. If both development keys exist, `MONGODB_URI` takes precedence. A URI selecting a different database is rejected. Connections have bounded timeouts and pools, no command monitoring, no Mongoose debug/body logging, no command buffering and no automatic collection/index creation. Connection failures produce a fixed safe error. Future platform schemas/indexes will be introduced explicitly with their features.
+
+```bash
+npm run db:check
+```
+
+This read-only diagnostic uses ping, topology and collection metadata/count commands, prints only non-content state, and closes its connection. It never creates/drops collections, inserts records, or reads document contents. Exit 0 requires reachable database, transaction-capable topology and only planned collection names. Exit 1 is also used for policy findings, not just network errors. It does not prove CRUD/transaction permissions or deployment-wide non-retention. See [database setup and validation](docs/Database_setup.md) and [health API examples](docs/Health_API.md).
+
+Database integration runs require `NODE_ENV=test`, `MONGODB_TEST_URI`, and an exact `MONGODB_TEST_DATABASE` matching `smartbord_test_<32 lowercase hex digits>`. They never fall back to application credentials. No write-based integration suite exists yet; its eventual cleanup must recheck the exact generated database name before dropping anything.
+
+## Next milestone
+
+B2 identity work remains: accounts, Argon2id, session rotation/revocation, current-account guards, enrollment, browser/native credential transports and explicit admin bootstrap. Existing dependency audit findings are tracked in the progress record; this foundation is not production acceptance.
 
 Do not add lecture/media/upload modules or adapt the reference projects' upload middleware. Logout/account blocking must never erase device files. See [the storage policy](contracts/storage-policy.md) before adding persistence or telemetry.

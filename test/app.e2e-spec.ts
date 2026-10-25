@@ -4,14 +4,20 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { FORBIDDEN_HTTP_PATHS } from '../src/contracts/platform-v1';
+import { getConnectionToken } from '@nestjs/mongoose';
+import { createConnectionStub } from './helpers/connection-stub';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
+  const connection = createConnectionStub();
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(getConnectionToken())
+      .useValue(connection)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.listen(0, '127.0.0.1');
@@ -35,8 +41,30 @@ describe('AppController (e2e)', () => {
       .expect('Cache-Control', 'no-store')
       .expect(503, {
         status: 'not_ready',
-        checks: { platformDatabase: 'not_implemented' },
+        checks: { platformDatabase: 'down', transactions: 'unknown' },
       });
+  });
+
+  it('reports readiness only when the database and transaction topology are available', async () => {
+    connection.readyState = 1;
+    try {
+      await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect('Cache-Control', 'no-store')
+        .expect(200, {
+          status: 'ready',
+          checks: { platformDatabase: 'up', transactions: 'supported' },
+        });
+      connection.hello.mockResolvedValueOnce({ maxWireVersion: 17 });
+      await request(app.getHttpServer())
+        .get('/health/ready')
+        .expect(503, {
+          status: 'not_ready',
+          checks: { platformDatabase: 'up', transactions: 'unsupported' },
+        });
+    } finally {
+      connection.readyState = 0;
+    }
   });
 
   it.each(FORBIDDEN_HTTP_PATHS)(
@@ -68,5 +96,6 @@ describe('AppController (e2e)', () => {
 
   afterAll(async () => {
     await app.close();
+    expect(connection.close).toHaveBeenCalledTimes(1);
   });
 });

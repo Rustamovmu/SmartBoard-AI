@@ -18,6 +18,6 @@ Current HTTP failures use `{ statusCode, code, message }`. They do not echo URLs
 
 `DEVICE_REVOKED`, `ANALYSIS_BUSY` and `VISION_UNAVAILABLE` are reserved for future identity/analysis features. They are not emitted by B1. GraphQL/WebSocket error adapters will use the shared codes but require separate transport implementations; the current filter is HTTP-only. GraphQL lists will use `{ items, page, pageSize, total }`.
 
-Health readiness is a diagnostic response rather than an exception: currently 503 with `{ status: "not_ready", checks: { platformDatabase: "not_implemented" } }`. Liveness is 200 with `{ status: "ok" }`. Both are public and expose no database URI or credentials.
+Health readiness is a diagnostic response rather than an exception. It returns 200 with `{ status: "ready", checks: { platformDatabase: "up", transactions: "supported" } }` when read-only dependency probes pass. Otherwise it returns 503 with `status: "not_ready"`; `platformDatabase` is `up`/`down` and `transactions` is `supported`/`unsupported`/`unknown`. This checks topology support, not transaction permissions or feature completion. Liveness is 200 with `{ status: "ok" }`. Both are public and expose no database URI or credentials. See [health API examples](../docs/Health_API.md).
 
 `DEVICE_STORAGE_FULL`, `LOCAL_SAVE_FAILED`, `PERMISSION_DENIED` and `FILE_MISSING` are local client errors. They must never imply a server has saved private content.

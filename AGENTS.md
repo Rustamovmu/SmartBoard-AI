@@ -16,10 +16,12 @@ The user's latest explicit requirements take precedence over older plans. In par
 
 - Working backend project: `/Users/a1234/Developer/SmartBord-AI`, package name `smartbord-ai`. Source lives directly under `src/`; there is no implemented `apps/api/` layout here.
 - Entry point: `src/main.ts` creates `AppModule` from `src/app.module.ts`, enables shutdown hooks and listens on validated `PORT`/`HOST`, defaulting to `127.0.0.1:3000`. The plan's NestJS port 4000 is an optional development convention, not the current default. Do not change ports as part of documentation work.
-- `src/app.controller.ts` delegates `GET /` to `src/app.service.ts`, which returns `Hello World!`. The root module imports configuration and health modules and registers a safe HTTP error filter.
+- `src/app.controller.ts` delegates `GET /` to `src/app.service.ts`, which returns `Hello World!`. The root module imports configuration, database and health modules and registers a safe HTTP error filter.
 - `src/app.controller.spec.ts` is the starter unit test; `test/app.e2e-spec.ts` is the starter Supertest endpoint test. Their configuration is in `jest.config.ts` and `test/jest-e2e.json`.
-- B1 implements configuration validation, `GET /health/live` (200), `GET /health/ready` (503 until dependencies exist), safe HTTP errors and versioned policy/contracts. See `src/contracts/` and `contracts/`; declared future routes/limits do not activate services. No GraphQL schema exists yet.
-- MongoDB/Mongoose, authentication, enrollment, GraphQL/Apollo, analysis/control WebSockets, Python vision, and user/admin platform modules are planned, not implemented here.
+- B1 implements configuration validation, health routes, safe HTTP errors and versioned policy/contracts. See `src/contracts/` and `contracts/`; declared future routes/limits do not activate services. No GraphQL schema exists yet.
+- The initial B2 increment adds Mongoose connection management and a read-only `npm run db:check`. Start scripts load ignored `.env` settings; development accepts `MONGO_DEV`, production requires `MONGODB_URI`. The dedicated application database is `SmartBoardAI`. There are no schemas, account records or automatic collection/index creation yet.
+- `GET /health/live` returns 200 after startup; `/health/ready` returns 200 only for a reachable database with transaction-capable topology, otherwise 503. This does not prove transaction permissions. Test apps inject synthetic connections; live database probes are documented separately.
+- Authentication, enrollment, GraphQL/Apollo, analysis/control WebSockets, Python vision, and user/admin platform modules are planned, not implemented here.
 - Next.js, React/Vite/Capacitor, native recording, SQLite and device-file adapters belong to the separate planned frontend project. No frontend/mobile target or Python vision service currently exists in this repository.
 - The following implementation rules describe required future behavior. A rule, dependency, schema, starter test or plan is not evidence that a feature works. Reinspect source before updating this baseline.
 
