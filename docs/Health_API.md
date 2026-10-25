@@ -1,8 +1,8 @@
 # Health API examples
 
-These are documented HTTP examples, not saved Postman requests. The routes are public and need no user/admin identity, variables, tokens or request body. They change no records. Readiness checks dependencies and does not certify that authentication or analysis is implemented.
+These are documented HTTP examples, not saved Postman requests. The routes are public and need no user/admin identity, variables, tokens or request body. They change no records. Readiness checks dependencies and auth indexes; it does not certify full product behavior or analysis availability.
 
-Prerequisites: Node.js 24, installed dependencies, a configured dedicated `SmartBoardAI` MongoDB connection in ignored local configuration, and an available loopback port. For deterministic automated scenarios, the E2E suites inject explicit synthetic connections; they never modify real records to simulate outages.
+Prerequisites: Node.js 24, installed dependencies, prepared authentication indexes (`npm run db:prepare`), a configured dedicated `SmartBoardAI` MongoDB connection in ignored local configuration, and an available loopback port. For deterministic automated scenarios, the E2E suites inject explicit synthetic connections; they never modify real records to simulate outages.
 
 ## Liveness
 
@@ -23,10 +23,10 @@ Host: 127.0.0.1:3000
 Expected success: 200, `Cache-Control: no-store`:
 
 ```json
-{ "status": "ready", "checks": { "platformDatabase": "up", "transactions": "supported" } }
+{ "status": "ready", "checks": { "platformDatabase": "up", "transactions": "supported", "authentication": "ready" } }
 ```
 
-Expected rejection when an established connection is down or probes fail: 503 with `status: "not_ready"`, `platformDatabase: "down"`, `transactions: "unknown"`. A reachable standalone/unsupported topology returns 503 with `platformDatabase: "up"`, `transactions: "unsupported"`. No connection strings, database names, credentials or driver errors are exposed.
+Expected rejection when an established connection is down or probes fail: 503 with `status: "not_ready"`, `platformDatabase: "down"`, `transactions: "unknown"`, `authentication: "not_ready"`. Missing required auth indexes also produces 503. A reachable standalone/unsupported topology returns 503 with `platformDatabase: "up"`, `transactions: "unsupported"`. No connection strings, database names, credentials or driver errors are exposed.
 
 ## Unknown/private-content endpoints
 
@@ -52,4 +52,4 @@ curl -i http://127.0.0.1:3000/health/live
 curl -i http://127.0.0.1:3000/health/ready
 ```
 
-Use Ctrl-C in the server terminal afterward; shutdown closes its app-owned database connection. No database cleanup is required because these requests write no data. The documented manual curl examples were not executed against the user's database; automated HTTP evidence uses synthetic connections. The live `db:check` evidence is recorded separately in [database setup](Database_setup.md).
+Use Ctrl-C in the server terminal afterward; shutdown closes its app-owned database connection. No database cleanup is required because these requests write no data. The documented manual curl examples were not executed against the user's database; root E2E evidence uses synthetic connections; auth integration and Postman evidence additionally uses real generated disposable MongoDB databases. The live `db:check` evidence is recorded separately in [database setup](Database_setup.md).

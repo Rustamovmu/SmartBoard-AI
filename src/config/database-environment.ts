@@ -3,14 +3,12 @@ export interface DatabaseSettings {
   name: string;
 }
 
-const TEST_DATABASE_PATTERN = /^smartbord_test_[a-f0-9]{32}$/;
+const TEST_DATABASE_PATTERN = /^sbt_[a-f0-9]{32}$/;
 
 /** Tests must explicitly opt into an exact disposable name; never use app data. */
 export function assertDisposableDatabase(name: string): void {
   if (!TEST_DATABASE_PATTERN.test(name)) {
-    throw new Error(
-      'Test database must be named smartbord_test_<32 hex digits>.',
-    );
+    throw new Error('Test database must be named sbt_<32 hex digits>.');
   }
 }
 

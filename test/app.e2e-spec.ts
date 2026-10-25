@@ -6,6 +6,7 @@ import { AppModule } from './../src/app.module';
 import { FORBIDDEN_HTTP_PATHS } from '../src/contracts/platform-v1';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { createConnectionStub } from './helpers/connection-stub';
+import { AuthSchemaService } from '../src/modules/auth/auth-schema.service';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -17,6 +18,8 @@ describe('AppController (e2e)', () => {
     })
       .overrideProvider(getConnectionToken())
       .useValue(connection)
+      .overrideProvider(AuthSchemaService)
+      .useValue({ assertPrepared: jest.fn().mockResolvedValue(undefined) })
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -41,7 +44,11 @@ describe('AppController (e2e)', () => {
       .expect('Cache-Control', 'no-store')
       .expect(503, {
         status: 'not_ready',
-        checks: { platformDatabase: 'down', transactions: 'unknown' },
+        checks: {
+          platformDatabase: 'down',
+          transactions: 'unknown',
+          authentication: 'not_ready',
+        },
       });
   });
 
@@ -53,14 +60,22 @@ describe('AppController (e2e)', () => {
         .expect('Cache-Control', 'no-store')
         .expect(200, {
           status: 'ready',
-          checks: { platformDatabase: 'up', transactions: 'supported' },
+          checks: {
+            platformDatabase: 'up',
+            transactions: 'supported',
+            authentication: 'ready',
+          },
         });
       connection.hello.mockResolvedValueOnce({ maxWireVersion: 17 });
       await request(app.getHttpServer())
         .get('/health/ready')
         .expect(503, {
           status: 'not_ready',
-          checks: { platformDatabase: 'up', transactions: 'unsupported' },
+          checks: {
+            platformDatabase: 'up',
+            transactions: 'unsupported',
+            authentication: 'ready',
+          },
         });
     } finally {
       connection.readyState = 0;

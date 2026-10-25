@@ -12,6 +12,7 @@ import type { App } from 'supertest/types';
 import { AppModule } from '../src/app.module';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { createConnectionStub } from './helpers/connection-stub';
+import { AuthSchemaService } from '../src/modules/auth/auth-schema.service';
 
 // Only registered in this test app, never in the production module.
 @Controller('synthetic-error')
@@ -42,6 +43,8 @@ describe('safe HTTP errors (e2e)', () => {
     })
       .overrideProvider(getConnectionToken())
       .useValue(createConnectionStub())
+      .overrideProvider(AuthSchemaService)
+      .useValue({ assertPrepared: jest.fn().mockResolvedValue(undefined) })
       .compile();
     app = module.createNestApplication();
     await app.listen(0, '127.0.0.1');

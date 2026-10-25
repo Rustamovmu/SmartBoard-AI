@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-25",
+  "timezone": "Asia/Seoul",
+  "runner": "Official Postman CLI",
+  "runnerVersion": "1.76.0",
+  "command": "npm run postman:test",
+  "requests": 25,
+  "assertions": 86,
+  "failedRequests": 0,
+  "failedAssertions": 0,
+  "exitCode": 0,
+  "fixture": "Generated sbt_<32 hex digits> database via MONGODB_TEST_URI",
+  "loopbackOnly": true,
+  "cloudEventReporting": false,
+  "disposableDatabaseRemoved": true,
+  "temporaryHostClosed": true,
+  "desktopImportAndRunVerified": false,
+  "desktopLimitation": "macOS ScreenCaptureKit stream failure during import automation",
+  "realBrowserHttpsVerified": false,
+  "nativeDeviceStorageVerified": false
+}

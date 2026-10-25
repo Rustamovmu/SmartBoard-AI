@@ -15,6 +15,7 @@ const ERRORS: Record<number, Omit<HttpErrorResponse, 'statusCode'>> = {
   403: { code: 'FORBIDDEN', message: 'Access denied.' },
   404: { code: 'NOT_FOUND', message: 'Route not found.' },
   405: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed.' },
+  409: { code: 'CONFLICT', message: 'Account could not be created.' },
   413: {
     code: 'PAYLOAD_TOO_LARGE',
     message: 'Request exceeds the size limit.',
@@ -33,10 +34,18 @@ export class HttpErrorFilter implements ExceptionFilter {
     // GraphQL and WebSocket transports need their own error adapters later.
     if (host.getType() !== 'http') throw exception;
 
+    const parserStatus =
+      exception instanceof Error && 'type' in exception
+        ? exception.type === 'entity.too.large'
+          ? 413
+          : exception.type === 'entity.parse.failed'
+            ? 400
+            : undefined
+        : undefined;
     const statusCode =
       exception instanceof HttpException
         ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+        : (parserStatus ?? HttpStatus.INTERNAL_SERVER_ERROR);
     const error = ERRORS[statusCode] ?? {
       code: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_REJECTED',
       message:

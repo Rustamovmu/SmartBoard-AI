@@ -3,7 +3,7 @@ import {
   parseDatabaseEnvironment,
 } from './database-environment';
 
-const testName = 'smartbord_test_0123456789abcdef0123456789abcdef';
+const testName = 'sbt_0123456789abcdef0123456789abcdef';
 
 describe('database configuration safety', () => {
   it('supports the existing development MONGO_DEV key', () => {
@@ -48,7 +48,10 @@ describe('database configuration safety', () => {
   it('refuses an application connection from a Jest worker outside test mode', () => {
     expect(() =>
       parseDatabaseEnvironment(
-        { JEST_WORKER_ID: '1', MONGODB_URI: 'mongodb://127.0.0.1/SmartBoardAI' },
+        {
+          JEST_WORKER_ID: '1',
+          MONGODB_URI: 'mongodb://127.0.0.1/SmartBoardAI',
+        },
         'production',
       ),
     ).toThrow('Database tests require NODE_ENV=test.');
@@ -66,14 +69,9 @@ describe('database configuration safety', () => {
     ).toBe(testName);
   });
 
-  it.each([
-    'SmartBoardAI',
-    'admin',
-    'smartbord_test_',
-    '',
-    `${testName}_other`,
-  ])('rejects unsafe disposable database name %p', (name) =>
-    expect(() => assertDisposableDatabase(name)).toThrow(),
+  it.each(['SmartBoardAI', 'admin', 'sbt_', '', `${testName}_other`])(
+    'rejects unsafe disposable database name %p',
+    (name) => expect(() => assertDisposableDatabase(name)).toThrow(),
   );
 
   it.each([

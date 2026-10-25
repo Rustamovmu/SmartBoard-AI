@@ -1,0 +1,1578 @@
+{
+  "info": {
+    "name": "SmartBoardAI — Auth v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run in order ONLY against npm run postman:serve. Supply its loopback baseUrl and testRunId. Uses a uniquely named disposable MongoDB test database. Credentials use runtime pm.variables only, never saved collection/environment variables. Contains no DB URI or real user credentials. Browser cookies are manually supplied on loopback for wire checks; actual browser HTTPS behavior remains a separate test."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:0"
+    },
+    {
+      "key": "testRunId",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const base = pm.variables.get('baseUrl');",
+          "const run = pm.variables.get('testRunId');",
+          "if (!/^http:\\/\\/127\\.0\\.0\\.1:[0-9]+$/.test(base) || !/^[a-f0-9]{32}$/.test(run)) throw new Error('Use baseUrl and testRunId printed by npm run postman:serve.');",
+          "if (!pm.request.url.toString().includes('/health/') && pm.variables.get('confirmedTestRun') !== run) throw new Error('Run health requests first to confirm the disposable host.');",
+          "if (!pm.variables.get('fixtureEmail')) {",
+          " pm.variables.set('fixtureEmail', 'postman-' + pm.variables.replaceIn('{{$guid}}') + '@example.test');",
+          " pm.variables.set('fixturePassword', 'synthetic-' + pm.variables.replaceIn('{{$guid}}'));",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Liveness and disposable-host confirmation",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health/live",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health",
+            "live"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "if (pm.response.code !== 200 || pm.response.headers.get('X-SmartBord-Test-Run') !== pm.variables.get('testRunId')) {",
+              " pm.execution.setNextRequest(null); throw new Error('Refusing auth requests against an unconfirmed host.');",
+              "}",
+              "pm.variables.set('confirmedTestRun', pm.variables.get('testRunId'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": [
+        {
+          "name": "Documented response shape — no credentials",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/live",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "live"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "body": "{\n  \"status\": \"ok\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "02 Readiness with real test MongoDB",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health/ready",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health",
+            "ready"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "if (pm.response.code !== 200 || pm.response.headers.get('X-SmartBord-Test-Run') !== pm.variables.get('testRunId')) {",
+              " pm.execution.setNextRequest(null); throw new Error('Refusing auth requests against an unconfirmed host.');",
+              "}",
+              "pm.variables.set('confirmedTestRun', pm.variables.get('testRunId'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "03 Native signup creates USER",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "signup"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"name\": \"Synthetic Postman User\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const result = pm.response.json();",
+              "pm.test('No password hash', () => pm.expect(result.user).not.to.have.property('passwordHash'));",
+              "pm.variables.set('accessToken', result.accessToken);",
+              "pm.variables.set('refreshToken', result.refreshToken);",
+              "pm.test('Public signup creates USER', () => pm.expect(result.user.role).to.eql('USER'));",
+              "pm.variables.set('oldAccessToken', result.accessToken); pm.variables.set('oldRefreshToken', result.refreshToken);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "04 Current native account",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "05 Reject public ADMIN signup",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "signup"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"name\": \"Synthetic Postman User\",\n  \"password\": \"{{fixturePassword}}\",\n  \"role\": \"ADMIN\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": [
+        {
+          "name": "Documented response shape — no credentials",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-SmartBord-Client",
+                "value": "native"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "signup"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"name\": \"Synthetic Postman User\",\n  \"password\": \"{{fixturePassword}}\",\n  \"role\": \"ADMIN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 400,\n  \"code\": \"VALIDATION_ERROR\",\n  \"message\": \"Invalid request.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "06 Reject private lecture fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "signup"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"name\": \"Synthetic Postman User\",\n  \"password\": \"{{fixturePassword}}\",\n  \"note\": \"synthetic-private-lecture-marker\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('No reflected private text', () => pm.expect(pm.response.text()).not.to.include('synthetic-private-lecture-marker'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "07 Wrong password rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"synthetic-wrong-password\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": [
+        {
+          "name": "Documented response shape — no credentials",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-SmartBord-Client",
+                "value": "native"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"synthetic-wrong-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "status": "Unauthorized",
+          "code": 401,
+          "header": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 401,\n  \"code\": \"UNAUTHENTICATED\",\n  \"message\": \"Authentication required.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "08 Rotate native refresh credential",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const result = pm.response.json();",
+              "pm.test('No password hash', () => pm.expect(result.user).not.to.have.property('passwordHash'));",
+              "pm.variables.set('accessToken', result.accessToken);",
+              "pm.variables.set('refreshToken', result.refreshToken);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "09 Previous access credential rejected",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{oldAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "10 Rotated access credential works",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "11 Old refresh replay revokes family",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{oldRefreshToken}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "12 Replay invalidated current access",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "13 Login after family revocation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const result = pm.response.json();",
+              "pm.test('No password hash', () => pm.expect(result.user).not.to.have.property('passwordHash'));",
+              "pm.variables.set('accessToken', result.accessToken);",
+              "pm.variables.set('refreshToken', result.refreshToken);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "14 Logout native session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "15 Access rejected after logout",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "16 Browser CSRF challenge",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/csrf",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "csrf"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.variables.set('csrfToken', pm.response.json().csrfToken);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "17 Browser login without CSRF rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": [
+        {
+          "name": "Documented response shape — no credentials",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-SmartBord-Client",
+                "value": "browser"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Origin",
+                "value": "https://localhost:3000"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "status": "Forbidden",
+          "code": 403,
+          "header": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 403,\n  \"code\": \"FORBIDDEN\",\n  \"message\": \"Access denied.\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "18 Browser login sets secure cookies",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          },
+          {
+            "key": "Cookie",
+            "value": "__Host-sb_csrf={{csrfToken}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const result = pm.response.json();",
+              "pm.test('Browser credentials stay in cookies', () => {",
+              " pm.expect(result).not.to.have.property('accessToken'); pm.expect(result).not.to.have.property('refreshToken');",
+              "});",
+              "const cookies = [];",
+              "pm.response.headers.each((header) => {",
+              " if (header.key.toLowerCase() === 'set-cookie') {",
+              "  pm.test('Secure HttpOnly host cookie', () => {",
+              "   pm.expect(header.value).to.include('Secure'); pm.expect(header.value).to.include('HttpOnly');",
+              "   pm.expect(header.value).to.include('SameSite=Strict'); pm.expect(header.value).not.to.include('Domain=');",
+              "  });",
+              "  cookies.push(header.value.split(';')[0]);",
+              " }",
+              "});",
+              "pm.variables.set('browserCookies', '__Host-sb_csrf=' + pm.variables.get('csrfToken') + '; ' + cookies.join('; '));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "19 Browser current account from cookie",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          },
+          {
+            "key": "Cookie",
+            "value": "{{browserCookies}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "20 Browser refresh with wrong CSRF rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          },
+          {
+            "key": "Cookie",
+            "value": "{{browserCookies}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "wrong-synthetic-csrf"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "21 Browser refresh rotates cookies",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          },
+          {
+            "key": "Cookie",
+            "value": "{{browserCookies}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const result = pm.response.json();",
+              "pm.test('Browser credentials stay in cookies', () => {",
+              " pm.expect(result).not.to.have.property('accessToken'); pm.expect(result).not.to.have.property('refreshToken');",
+              "});",
+              "const cookies = [];",
+              "pm.response.headers.each((header) => {",
+              " if (header.key.toLowerCase() === 'set-cookie') {",
+              "  pm.test('Secure HttpOnly host cookie', () => {",
+              "   pm.expect(header.value).to.include('Secure'); pm.expect(header.value).to.include('HttpOnly');",
+              "   pm.expect(header.value).to.include('SameSite=Strict'); pm.expect(header.value).not.to.include('Domain=');",
+              "  });",
+              "  cookies.push(header.value.split(';')[0]);",
+              " }",
+              "});",
+              "pm.variables.set('browserCookies', '__Host-sb_csrf=' + pm.variables.get('csrfToken') + '; ' + cookies.join('; '));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "22 Browser logout clears cookies",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          },
+          {
+            "key": "Cookie",
+            "value": "{{browserCookies}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "23 Browser access rejected after logout",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          },
+          {
+            "key": "Cookie",
+            "value": "{{browserCookies}}"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "24 Reject browser disguising itself as native",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "https://malicious.invalid"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "25 No private media upload API",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/uploads/videos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "uploads",
+            "videos"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"marker\": \"synthetic-private-marker\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": [
+        {
+          "name": "Documented response shape — no credentials",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/uploads/videos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "uploads",
+                "videos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"marker\": \"synthetic-private-marker\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "header": [
+            {
+              "key": "Cache-Control",
+              "value": "no-store"
+            },
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 404,\n  \"code\": \"NOT_FOUND\",\n  \"message\": \"Route not found.\"\n}"
+        }
+      ]
+    }
+  ]
+}

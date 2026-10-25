@@ -1,40 +1,36 @@
 # SmartBord-AI backend
 
-NestJS/TypeScript backend for device-owned whiteboard recordings. Private lecture content stays on the recording device. This server is for platform accounts, enrollment, published content and optional transient analysis.
+NestJS/TypeScript platform backend for device-owned whiteboard recordings. Private lectures, media, notes, OCR and durable capture records belong on the recording device. The backend stores accounts, authentication and explicitly published platform content only.
 
-Development follows [the backend plan](docs/Backend_plan.md), [frontend/mobile plan](docs/Frontend_plan.md), and [AGENTS.md](AGENTS.md). Plans specify the target; [development progress](docs/Development_progress.md) records actual implementation and validation.
+Follow [AGENTS.md](AGENTS.md), [backend plan](docs/Backend_plan.md) and [frontend/mobile plan](docs/Frontend_plan.md). [Development progress](docs/Development_progress.md) distinguishes implementation and verification from planned work.
 
-## Current behavior
+## Implemented
 
-- Root-level `src/` project; Node.js 24, npm and the committed lockfile.
-- `GET /` still returns `Hello World!` for starter compatibility.
-- `GET /health/live` reports process liveness.
-- `GET /health/ready` returns 200 only when bounded database probes succeed and transaction topology is supported; otherwise 503.
-- Validated `PORT`, `HOST` and `NODE_ENV`; default address `127.0.0.1:3000`.
-- Safe HTTP error responses with no request bodies, URLs, exception messages or stacks in the response. Unexpected failures log only a fixed message and status code.
-- [Versioned contracts](src/contracts/platform-v1.ts), [storage policy](contracts/storage-policy.md), [analysis lifecycle](contracts/live-protocol.md), and [errors](contracts/errors.md).
+- Root-level `src/`, Node.js 24, npm and committed lockfile; default `127.0.0.1:3000`.
+- `GET /` starter compatibility; live/readiness health routes with database/topology/auth-index checks.
+- HTTP signup/login/refresh/logout/me/CSRF with strict DTOs and an 8 KiB JSON body limit.
+- Argon2id passwords; hashed opaque access/refresh credentials; 15-minute access and rotating sessions capped at 30 days.
+- Separate browser Secure/HttpOnly/SameSite cookies and native credential transport, with origin/CSRF checks and MongoDB rate limits.
+- Current account/session/status checks and an administrator guard. Public signup creates USER only.
+- Explicit local schema setup and administrator bootstrap with a transactional audit record.
+- Real MongoDB integration tests using guarded disposable databases, plus a repeatable [Postman collection and verification](docs/Postman_Auth_Verification.md).
 
-Mongoose connection management and read-only database diagnostics are implemented. Accounts/authentication, enrollment, GraphQL, WebSockets and Python vision are not implemented. No frontend/native target exists here. Contract constants describe required future behavior, including analysis limits; they do not activate those services. No GraphQL schema is published until real resolvers exist. Database readiness does not mean these future features are complete.
+Enrollment, user/admin management mutations (including last-admin protection), GraphQL/schema generation, WebSockets, Python vision and frontend/native storage are still planned. No lecture upload/library/archive or phone-wipe API exists. No fully offline AI or physical phone storage proof is claimed.
 
 ## Setup and operation
 
 ```bash
 npm ci
+npm run db:prepare
 npm run build
 npm run start:prod
 ```
 
-Provide database configuration first. These commands start a foreground server; use Ctrl-C to stop it. Shutdown hooks close the app-owned database connection. Only start the host when needed. No development host is left running by implementation tests.
+Configure the dedicated `SmartBoardAI` database first in ignored `.env`: `MONGODB_URI`, or the existing `MONGO_DEV` key in development. Production requires `MONGODB_URI` and explicit `AUTH_BROWSER_ORIGINS`. See [.env.example](.env.example), [database setup](docs/Database_setup.md) and [authentication contract](contracts/authentication.md). Preserve actual credentials outside Git/chat.
 
-The npm start variants and database diagnostic load `.env` if present; existing process environment variables take precedence. See [.env.example](.env.example); preserve existing settings. To load that file explicitly after building:
+The npm start variants and operational database/admin commands load `.env` if present; existing process environment wins. `db:prepare` explicitly creates allowed platform collections/indexes without inserting records or dropping indexes. Auth fails closed until its unique-email and TTL indexes exist. No command bootstraps an administrator automatically. `admin:create` requires explicit operator details; see the authentication contract for secure input.
 
-```bash
-node --env-file=.env dist/main.js
-```
-
-`PORT` must be 1–65535, `HOST` an IP address or `localhost`, and `NODE_ENV` development/test/production. Binding to a non-loopback address requires an explicit `HOST`. The plan's port 4000 can be selected with `PORT=4000`; the code default remains 3000.
-
-Node's environment-file behavior is documented in the [Node.js CLI reference](https://nodejs.org/docs/latest-v24.x/api/cli.html#--env-filefile). Health checks follow the liveness/readiness distinction in [NestJS health documentation](https://docs.nestjs.com/recipes/terminus).
+`PORT` must be 1–65535, `HOST` an IP address or `localhost`, and `NODE_ENV` development/test/production. Port 4000 remains optional. Foreground hosts stop with Ctrl-C and close their own connections. Do not leave development servers running unnecessarily. Website authentication needs trusted HTTPS and same-site web/API deployment; cookie security is never disabled for HTTP development. Native loopback HTTP is used only for local verification.
 
 ## Validation
 
@@ -43,27 +39,23 @@ npm run lint
 ./node_modules/.bin/tsc --noEmit --incremental false
 npm test -- --runInBand
 npm run test:e2e -- --runInBand
+npm run test:integration
+npm run postman:test
 npm run build
 ```
 
-There is no npm `typecheck` script. `lint` is non-fixing. Build creates ignored `dist/` output. `format` rewrites source and is not an inspection command. E2E apps bind temporary loopback ports and close their own servers.
+There is no npm `typecheck` script. Lint is non-fixing; build writes ignored output. `format` rewrites files. Unit/root E2E suites use synthetic connections and do not load `.env`. Integration/Postman commands load only the dedicated `MONGODB_TEST_URI`, generate a unique `sbt_<32 hex digits>` database, check that it starts empty, and verify its exact identity before cleanup. They never fall back to application credentials. The shorter prefix accommodates the provided cluster's 38-byte name limit.
 
-Tests currently cover starter behavior, configuration, contract agreement between the plans, health responses, safe errors, representative forbidden private-content endpoints and database lifecycle/configuration safety. HTTP tests override the connection with explicit synthetic stubs; they never load `.env` or contact the application database. They do not prove database CRUD permissions, real transactions, future authentication, native storage, real camera/model behavior, or deployment-wide RAM-only handling.
+`postman:test` uses the official pinned Postman CLI, confirms a unique test-host marker before auth requests, disables cloud event reporting and closes/removes its own host/database in `finally`. No Postman login/API key is needed for the local file run. `postman:serve` supports optional desktop runs and stops automatically after 15 minutes. See [Postman verification](docs/Postman_Auth_Verification.md).
 
-## Database
+Checks cover implemented identity behavior, not enrollment, real browser HTTPS, native secure-storage bridges, phone recording, vision or deployment-wide no-retention. Known dependency advisories and outstanding acceptance are in the progress record.
 
-The dedicated database is `SmartBoardAI`. Set `MONGODB_URI` in ignored local configuration; development also accepts the existing `MONGO_DEV` key. Production requires `MONGODB_URI`. If both development keys exist, `MONGODB_URI` takes precedence. A URI selecting a different database is rejected. Connections have bounded timeouts and pools, no command monitoring, no Mongoose debug/body logging, no command buffering and no automatic collection/index creation. Connection failures produce a fixed safe error. Future platform schemas/indexes will be introduced explicitly with their features.
+## Read-only database inspection
 
 ```bash
 npm run db:check
 ```
 
-This read-only diagnostic uses ping, topology and collection metadata/count commands, prints only non-content state, and closes its connection. It never creates/drops collections, inserts records, or reads document contents. Exit 0 requires reachable database, transaction-capable topology and only planned collection names. Exit 1 is also used for policy findings, not just network errors. It does not prove CRUD/transaction permissions or deployment-wide non-retention. See [database setup and validation](docs/Database_setup.md) and [health API examples](docs/Health_API.md).
+This command probes connectivity/topology and collection metadata/counts, prints non-content state, and closes its connection. It changes no records or collections. Exit 1 also reports policy findings; the pre-existing empty unexpected collection was preserved. [Database setup](docs/Database_setup.md) records actual evidence and limits.
 
-Database integration runs require `NODE_ENV=test`, `MONGODB_TEST_URI`, and an exact `MONGODB_TEST_DATABASE` matching `smartbord_test_<32 lowercase hex digits>`. They never fall back to application credentials. No write-based integration suite exists yet; its eventual cleanup must recheck the exact generated database name before dropping anything.
-
-## Next milestone
-
-B2 identity work remains: accounts, Argon2id, session rotation/revocation, current-account guards, enrollment, browser/native credential transports and explicit admin bootstrap. Existing dependency audit findings are tracked in the progress record; this foundation is not production acceptance.
-
-Do not add lecture/media/upload modules or adapt the reference projects' upload middleware. Logout/account blocking must never erase device files. See [the storage policy](contracts/storage-policy.md) before adding persistence or telemetry.
+Private lecture content must never enter MongoDB, filesystem storage, queues, logs, telemetry or backups. [Storage policy](contracts/storage-policy.md), [analysis lifecycle](contracts/live-protocol.md) and [errors](contracts/errors.md) govern future work. Logout/account blocking revokes platform access without any phone-file deletion command.
