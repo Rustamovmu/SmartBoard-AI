@@ -13,8 +13,10 @@ import { AdminPolicyService } from '../../src/modules/admin/admin-policy.service
 import { DeviceSchemaService } from '../../src/modules/device-enrollment/device-schema.service';
 import { MembersService } from '../../src/modules/members/members.service';
 import { PasswordService } from '../../src/modules/auth/password.service';
+import { PasswordRecoveryService } from '../../src/modules/auth/password-recovery.service';
 import {
   assertInitiallyEmpty,
+  assertExactTestDatabase,
   configureDisposableDatabase,
   dropOwnedTestDatabase,
 } from './disposable-database';
@@ -81,6 +83,40 @@ export async function createPostmanTestHost() {
     app.use((_request: Request, response: Response, next: NextFunction) => {
       response.setHeader('X-SmartBord-Test-Run', testRunId);
       next();
+    });
+    // One-shot synthetic fixture delivery, only in this guarded disposable host.
+    // Not registered in AppModule or any production controller. No caller can
+    // select an account; prior collection requests run before this fixture exists.
+    let recoveryFixtureUsed = false;
+    app.use('/__test/recovery-proof', (req: Request, res: Response) => {
+      res.setHeader('Cache-Control', 'no-store');
+      if (
+        req.method !== 'GET' ||
+        req.headers['x-smartbord-test-run'] !== testRunId ||
+        recoveryFixtureUsed
+      ) {
+        res.status(404).json({ code: 'NOT_FOUND' });
+        return;
+      }
+      recoveryFixtureUsed = true;
+      void (async () => {
+        assertExactTestDatabase(connection, name);
+        const email = `recovery-${testRunId}@example.test`;
+        const member = await connection.transaction(async (session) => {
+          await app.get(AdminPolicyService).acquire(session);
+          return app
+            .get(MembersService)
+            .create(
+              { email, name: 'Synthetic Postman Recovery Owner', passwordHash },
+              'USER',
+              session,
+            );
+        });
+        const proof = await app.get(PasswordRecoveryService).issue(email);
+        res.json({ ...proof, email, userId: member._id });
+      })().catch(() => {
+        res.status(503).json({ code: 'FIXTURE_UNAVAILABLE' });
+      });
     });
     configureApplication(app);
     await app.listen(0, '127.0.0.1');

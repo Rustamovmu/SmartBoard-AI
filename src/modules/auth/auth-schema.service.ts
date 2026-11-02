@@ -53,5 +53,24 @@ export class AuthSchemaService {
     await this.attempts.createCollection();
     await this.attempts.createIndexes();
     await this.assertPrepared();
+    await this.assertRecoveryPrepared();
+  }
+
+  async assertRecoveryPrepared() {
+    try {
+      const indexes = await this.members.listIndexes();
+      if (
+        !indexes.some(
+          (index) =>
+            index.unique === true &&
+            index.sparse === true &&
+            index.key.passwordRecoveryHash === 1 &&
+            Object.keys(index.key).length === 1,
+        )
+      )
+        throw new Error();
+    } catch {
+      throw new ServiceUnavailableException();
+    }
   }
 }

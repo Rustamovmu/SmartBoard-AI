@@ -3752,6 +3752,630 @@
         "disableCookies": true
       },
       "response": []
+    },
+    {
+      "name": "71 Retrieve one-shot synthetic recovery fixture",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "X-SmartBord-Test-Run",
+            "value": "{{testRunId}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/__test/recovery-proof",
+          "host": ["{{baseUrl}}"],
+          "path": ["__test", "recovery-proof"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const fixture = pm.response.json();",
+              "pm.test('Synthetic recovery fixture', () => pm.expect(fixture.email).to.eql('recovery-' + pm.variables.get('testRunId') + '@example.test'));",
+              "pm.test('Random recovery proof', () => pm.expect(/^sb_p\\.[A-Za-z0-9_-]{43}$/.test(fixture.recoveryToken)).to.eql(true));",
+              "pm.variables.set('recoveryToken', fixture.recoveryToken); pm.variables.set('recoveryEmail', fixture.email); pm.variables.set('recoveryUserId', fixture.userId);",
+              "pm.variables.set('recoveryNewPassword', 'synthetic-recovered-' + pm.variables.replaceIn('{{$guid}}'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "72 Login before password recovery",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{recoveryEmail}}\",\n  \"password\": \"{{fixtureAdminPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Old-password login', () => pm.expect(pm.response.json().user.id).to.eql(pm.variables.get('recoveryUserId')));",
+              "pm.variables.set('recoveryOldAccess', pm.response.json().accessToken); pm.variables.set('recoveryOldRefresh', pm.response.json().refreshToken);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "73 Reject malformed recovery proof",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/password/reset",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "password", "reset"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"recoveryToken\": \"invalid\",\n  \"password\": \"{{recoveryNewPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe VALIDATION_ERROR', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_ERROR'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "74 Reject private and privilege reset fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/password/reset",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "password", "reset"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"recoveryToken\": \"{{recoveryToken}}\",\n  \"password\": \"{{recoveryNewPassword}}\",\n  \"role\": \"ADMIN\",\n  \"lectureTitle\": \"synthetic-private-marker\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe VALIDATION_ERROR', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_ERROR'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "75 Browser reset requires CSRF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "browser"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "https://localhost:3000"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/password/reset",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "password", "reset"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"recoveryToken\": \"{{recoveryToken}}\",\n  \"password\": \"{{recoveryNewPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe FORBIDDEN', () => pm.expect(pm.response.json().code).to.eql('FORBIDDEN'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "76 Consume recovery proof without automatic login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/password/reset",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "password", "reset"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"recoveryToken\": \"{{recoveryToken}}\",\n  \"password\": \"{{recoveryNewPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Only success acknowledgement', () => pm.expect(pm.response.json()).to.deep.eql({success: true}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "77 Reset revoked old access",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{recoveryOldAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/me",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe UNAUTHENTICATED', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "78 Reset revoked old refresh",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{recoveryOldRefresh}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe UNAUTHENTICATED', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "79 Recovery proof cannot be replayed",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/password/reset",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "password", "reset"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"recoveryToken\": \"{{recoveryToken}}\",\n  \"password\": \"{{recoveryNewPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe UNAUTHENTICATED', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "80 Old password no longer works",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{recoveryEmail}}\",\n  \"password\": \"{{fixtureAdminPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe UNAUTHENTICATED', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "81 Login using recovered password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{recoveryEmail}}\",\n  \"password\": \"{{recoveryNewPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Role and status preserved', () => pm.expect(pm.response.json().user).to.include({id: pm.variables.get('recoveryUserId'), role: 'USER', status: 'ACTIVE'}));",
+              "pm.variables.set('recoveredAccess', pm.response.json().accessToken);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "82 Recovered current account has no credential fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{recoveredAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query { currentAccount { id email role status } }\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Current account only', () => pm.expect(pm.response.json().data.currentAccount).to.deep.eql({id: pm.variables.get('recoveryUserId'), email: pm.variables.get('recoveryEmail'), role: 'USER', status: 'ACTIVE'}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "83 Production auth boundary has no recovery issuer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{recoveredAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/password/forgot",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "password", "forgot"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{recoveryEmail}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('NOT_FOUND'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
     }
   ]
 }

@@ -22,6 +22,7 @@
     "db:check": "node --env-file-if-exists=.env -r ts-node/register scripts/check-database.ts",
     "db:prepare": "node --env-file-if-exists=.env -r ts-node/register scripts/prepare-database.ts",
     "admin:create": "node --env-file-if-exists=.env -r ts-node/register scripts/create-admin.ts",
+    "recovery:issue": "node --env-file-if-exists=.env -r ts-node/register scripts/issue-password-recovery.ts",
     "test:integration": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./test/jest-integration.json --runInBand",
     "postman:serve": "node -r ts-node/register scripts/postman-server.ts",
     "postman:test": "node -r ts-node/register scripts/run-postman.ts",

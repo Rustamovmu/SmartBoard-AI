@@ -42,6 +42,13 @@ export class Member {
   @Prop({ required: true, default: 0, select: false })
   authVersion: number;
 
+  @Prop({ type: String, select: false })
+  passwordRecoveryHash?: string;
+  @Prop({ type: Date, select: false })
+  passwordRecoveryExpiresAt?: Date;
+  @Prop({ type: Number, select: false })
+  passwordRecoveryVersion?: number;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,4 +57,9 @@ export const MemberSchema = SchemaFactory.createForClass(Member);
 MemberSchema.index(
   { email: 1 },
   { unique: true, name: 'unique_normalized_email' },
+);
+// Sparse: normal accounts have no recovery credential. Never TTL-index users.
+MemberSchema.index(
+  { passwordRecoveryHash: 1 },
+  { unique: true, sparse: true, name: 'unique_password_recovery_hash' },
 );

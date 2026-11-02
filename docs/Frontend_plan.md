@@ -262,6 +262,7 @@ Shared server routes:
 | --- | --- |
 | POST /auth/signup, /auth/login, /auth/refresh, /auth/logout | Platform identity |
 | GET /auth/me, /auth/csrf | Validated identity/browser CSRF |
+| POST /auth/password/reset | Consume an operator-issued recovery proof; require normal login afterward |
 | POST /graphql | Accounts, enrollment, published help/community and admin |
 | POST /analysis/access | Short-lived transient-analysis permission |
 | WSS /ws/analyze | Ephemeral frames/results/local-save acknowledgments |

@@ -77,4 +77,26 @@ export class AuditService {
       { session },
     );
   }
+
+  async passwordRecovery(
+    action: 'PASSWORD_RECOVERY_ISSUED' | 'PASSWORD_RESET',
+    subject: string,
+    session: ClientSession,
+  ) {
+    await this.events.create(
+      [
+        {
+          _id: randomUUID(),
+          action,
+          actorType:
+            action === 'PASSWORD_RECOVERY_ISSUED'
+              ? 'LOCAL_COMMAND'
+              : 'RECOVERY_CREDENTIAL',
+          subjectUserId: subject,
+          createdAt: new Date(),
+        },
+      ],
+      { session },
+    );
+  }
 }

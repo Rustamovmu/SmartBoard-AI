@@ -22,7 +22,11 @@ export class AuthEntryGuard implements CanActivate {
     await this.limits.consume(
       `auth:${scope}:ip`,
       request.ip ?? 'unknown',
-      scope === 'signup' ? 10 : scope === 'login' ? 20 : 60,
+      scope === 'signup' || scope === 'resetPassword'
+        ? 10
+        : scope === 'login'
+          ? 20
+          : 60,
     );
     return true;
   }

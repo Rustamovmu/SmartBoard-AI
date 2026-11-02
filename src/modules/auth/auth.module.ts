@@ -23,12 +23,17 @@ import {
   AuthAttemptSchema,
 } from './schemas/auth-attempt.schema';
 import { AuthSchemaService } from './auth-schema.service';
+import { AdminPolicyModule } from '../admin/admin-policy.module';
+import { AuditModule } from '../audit/audit.module';
+import { PasswordRecoveryService } from './password-recovery.service';
 
 @Module({
   imports: [
     DatabaseModule,
     MembersModule,
     DeviceRecordsModule,
+    AdminPolicyModule,
+    AuditModule,
     MongooseModule.forFeature([
       { name: AUTH_SESSION_MODEL, schema: AuthSessionSchema },
       { name: AUTH_ATTEMPT_MODEL, schema: AuthAttemptSchema },
@@ -37,6 +42,7 @@ import { AuthSchemaService } from './auth-schema.service';
   controllers: [AuthController],
   providers: [
     AuthSchemaService,
+    PasswordRecoveryService,
     AuthConfig,
     AuthService,
     AuthSessionService,
@@ -49,6 +55,7 @@ import { AuthSchemaService } from './auth-schema.service';
     AdminGuard,
   ],
   exports: [
+    PasswordRecoveryService,
     AuthSessionService,
     AuthTransportService,
     AuthSchemaService,

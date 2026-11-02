@@ -348,3 +348,58 @@ src/modules/device-enrollment/device-enrollment.service.ts
 src/modules/device-enrollment/dto/device.dto.ts
 test/device-enrollment.integration-spec.ts
 ```
+
+## 2026-11-02 — Operator-assisted password recovery
+
+Implemented explicit local `recovery:issue` and `POST /auth/password/reset` as the next B2 identity increment. The [recovery contract](../contracts/password-recovery.md) documents the exact CLI invocation, payload, identity boundary, success/rejections, limits, setup and cleanup. Both V2 plans and the framework-independent shared routes now include the reset endpoint. There is no production HTTP/GraphQL issuer, email/notification integration or reset UI. Operators must independently verify ownership and privately deliver the proof.
+
+Issuance generates a 256-bit random, 15-minute proof and transactionally replaces one hidden hash/expiry/auth-version tuple on the ACTIVE account with a local-command audit event. It does not change role/status/password/sessions. The unique sparse recovery-hash index is explicit setup; no collection or dependency was added and users have no TTL index. Expiry is enforced directly. Unused expired metadata stays bounded to one tuple per account; successful reset unsets it. Core readiness/authentication still checks its existing indexes; recovery separately fails closed before its index is prepared.
+
+Reset validates current proof/status/version before Argon2 work and inside the shared administrator-policy transaction after hashing/retries. It atomically changes the password, advances auth version, consumes the proof, revokes every account session and records a bounded `RECOVERY_CREDENTIAL` audit event. Concurrent consumption cannot both succeed; supersession, expiry, role/status changes and later reactivation cannot revive an old proof. Audit failure rolls everything back. Browser origin/CSRF checks apply and successful browser reset clears cookies. No automatic login occurs. The last ACTIVE ADMIN can recover without changing its role; BLOCKED/DELETED/missing accounts are refused. Device inventory and phone files remain intact.
+
+The npm CLI requires explicit `--private-output`, a private pipe/socket output and separate diagnostics; ordinary invocation, terminal/file output and merged stderr are refused before issuance. Its normal diagnostic messages never include the proof. The private JSON channel carries only proof/expiry to the operator's approved recipient, with no proof in argv or a saved file. Issuance precedes delivery, so failed/lost delivery requires explicit reissue. Real npm delivery was tested with an in-memory recipient; macOS clipboard/human delivery was not exercised.
+
+Reset limits are 10/IP/minute and 5/hashed proof/minute, plus the shared two-operation Argon2 bound. Failed service attempts consume their independent budget; unusable proofs skip expensive password work. Unknown/private/operator fields and invalid passwords do not consume the proof. Secrets remain absent from public DTOs/schema, audit payloads and normal logs. No lecture/media storage or new frontend/Python target was introduced.
+
+Read-only reference inspection: TripLink account-security reset controller/service and auth-record transaction serialization; adapted separation of validated HTTP inputs, services, version checks and revocation without copying its email/provider flow, usernames, recovery-code schema, credentials or data. Used [OWASP password recovery guidance](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html) for random expiring single-use proofs and normal login/session invalidation, retaining this project's no-token-in-URL rule. Sibling repositories were unchanged.
+
+Validation on 2026-11-02: lint (no warnings), non-writing TypeScript inspection, unit tests (14 suites/77 tests), HTTP E2E (2 suites/18 tests), real disposable MongoDB integration (4 suites/73 tests), Nest build and compiled `AppModule` import passed. Seventeen new integration cases cover real Argon2, hidden metadata, all-session/device-bound revocation, proof supersession/replay/expiry, concurrent consumers, issuance/reset audit rollback, blocked/deleted/reactivated accounts, roles/last admin, blocking during hashing, issuance/reset races, invalid/private/operator inputs, budgets, missing-index/idempotent setup, actual npm private-pipe CLI delivery and browser CSRF/cookie clearing. Schema generation passed and the GraphQL artifact remained unchanged; the real schema-equality regression also passed. A focused follow-up passed the production-boundary case with an added assertion that the test-only proof fixture is absent from AppModule (1 selected test passed; 16 other recovery tests were not selected in that focused run).
+
+Official Postman CLI 1.76.0 passed 83 requests/322 assertions, zero failures and exit 0. All prior 70 request definitions are unchanged. The disposable host adds a one-shot marked fixture channel for a fixed synthetic account at the later collection step, not an arbitrary-account issuer or production route. The random proof exists only in runtime variables and is not in CLI arguments, saved responses/examples, raw reports or evidence. See [Postman verification](Postman_Auth_Verification.md) and the [sanitized result](../postman/verification-2026-11-02-password-recovery.json).
+
+Tests used only initially empty, exact generated `sbt_<32 hex digits>` databases through the dedicated test URI. Their cleanup verified exact configured/connected identity, removed only owned test databases and closed their own loopback apps/connections. CLI negative-output testing used an owned empty temporary file which was removed; no proof bytes were written to it. The final Postman port has no listener. Application setup/inspection, real-account issuance/reset, administrator bootstrap, environment changes and deployment were not performed. Explicit `db:prepare` is required before using recovery on the application database.
+
+Remaining acceptance: actual separate frontend/native project and physical phone save/reopen proof, native secure storage and recovery UI, trusted browser HTTPS, independent operator identity-verification/delivery procedures, email notifications, connected-stream shutdown, vision and deployment-wide retention. Existing dependency-advisory/empty unexpected application-collection findings remain unresolved. This completes the recovery backend increment, not all B2/V2 or production acceptance.
+
+Final review: all 26 task files, including untracked source/tests/contract/evidence, were reviewed. All 74 local Markdown links resolve; task TypeScript/JSON and the recovery contract pass Prettier; JSON, manifest/lockfile agreement, credential/artifact scan and `git diff --check` pass. The prior 70 Postman request definitions and generated GraphQL schema are unchanged. No credential, environment file, build output, dependency or private lecture artifact is included.
+
+### Exact changed files — password recovery
+
+```text
+AGENTS.md
+README.md
+contracts/authentication.md
+contracts/password-recovery.md
+docs/Backend_plan.md
+docs/Database_setup.md
+docs/Development_progress.md
+docs/Frontend_plan.md
+docs/Health_API.md
+docs/Postman_Auth_Verification.md
+package.json
+postman/SmartBoardAI.postman_collection.json
+postman/verification-2026-11-02-password-recovery.json
+scripts/issue-password-recovery.ts
+scripts/lib/postman-host.ts
+src/contracts/platform-v1.ts
+src/modules/audit/audit.service.ts
+src/modules/audit/schemas/audit-event.schema.ts
+src/modules/auth/auth-schema.service.ts
+src/modules/auth/auth.controller.ts
+src/modules/auth/auth.module.ts
+src/modules/auth/dto/auth.dto.ts
+src/modules/auth/guards/auth-entry.guard.ts
+src/modules/auth/password-recovery.service.ts
+src/modules/members/schemas/member.schema.ts
+test/password-recovery.integration-spec.ts
+```

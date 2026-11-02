@@ -41,3 +41,13 @@ export class RefreshDto {
   @MaxLength(512)
   refreshToken?: string;
 }
+
+export class ResetPasswordDto {
+  @IsString()
+  @Matches(/^sb_p\.[A-Za-z0-9_-]{43}$/)
+  recoveryToken: string;
+
+  @IsString()
+  @Length(12, 128)
+  password: string;
+}

@@ -1,6 +1,6 @@
 # Health API examples
 
-These are documented HTTP examples, not saved Postman requests. The routes are public and need no user/admin identity, variables, tokens or request body. They change no records. Readiness checks dependencies and auth indexes; it does not certify full product behavior or analysis availability.
+These are documented HTTP examples, not saved Postman requests. The routes are public and need no user/admin identity, variables, tokens or request body. They change no records. Readiness checks dependencies and core auth indexes; it does not certify full product behavior, recovery-index preparation or analysis availability. [Password recovery](../contracts/password-recovery.md) and device enrollment fail closed on their own required setup checks.
 
 Prerequisites: Node.js 24, installed dependencies, prepared authentication indexes (`npm run db:prepare`), a configured dedicated `SmartBoardAI` MongoDB connection in ignored local configuration, and an available loopback port. For deterministic automated scenarios, the E2E suites inject explicit synthetic connections; they never modify real records to simulate outages.
 

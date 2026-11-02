@@ -6,6 +6,7 @@ export const PLATFORM_ROUTES = [
   { method: 'POST', path: '/auth/login' },
   { method: 'POST', path: '/auth/refresh' },
   { method: 'POST', path: '/auth/logout' },
+  { method: 'POST', path: '/auth/password/reset' },
   { method: 'GET', path: '/auth/me' },
   { method: 'GET', path: '/auth/csrf' },
   { method: 'POST', path: '/graphql' },

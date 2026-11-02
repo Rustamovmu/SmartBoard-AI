@@ -199,6 +199,7 @@ Both plan documents use these routes:
 | Transport | Routes / purpose |
 | --- | --- |
 | Auth HTTP | POST /auth/signup, /auth/login, /auth/refresh, /auth/logout; GET /auth/me, /auth/csrf |
+| Password recovery | POST /auth/password/reset: consumes a short-lived proof issued by an explicit local operator command; no public issuer or email delivery is assumed |
 | GraphQL | POST /graphql: accounts, enrollment, published help/community and admin operations only |
 | Analysis authorization | POST /analysis/access: short-lived stream permission, not a media upload |
 | Frame processing | WSS /ws/analyze: bounded ephemeral frames, results and local-save acknowledgments |

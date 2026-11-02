@@ -17,13 +17,15 @@ export class AuditEvent {
       'ACCOUNT_ACCESS_CHANGED',
       'DEVICE_ENROLLED',
       'DEVICE_REVOKED',
+      'PASSWORD_RECOVERY_ISSUED',
+      'PASSWORD_RESET',
     ],
     required: true,
   })
   action: string;
   @Prop({
     type: String,
-    enum: ['LOCAL_COMMAND', 'ADMIN', 'USER'],
+    enum: ['LOCAL_COMMAND', 'ADMIN', 'USER', 'RECOVERY_CREDENTIAL'],
     required: true,
   })
   actorType: string;

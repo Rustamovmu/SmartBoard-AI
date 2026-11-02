@@ -4,7 +4,7 @@ Implemented HTTP identity contract, separate from [GraphQL accounts](platform-ac
 
 ## Credential policy
 
-Passwords have 12–128 characters at signup, 1–128 at login, and are not trimmed. Argon2id uses 64 MiB, three iterations, one lane and a 32-byte hash. Unknown logins perform a dummy verification; at most two password operations run concurrently per app instance. Passwords/hashes are never returned or logged. Email is trimmed/lowercased, validated and protected by a required unique index. Names are trimmed, nonempty and at most 80 characters.
+Passwords have 12–128 characters at signup/reset, 1–128 at login, and are not trimmed. Argon2id uses 64 MiB, three iterations, one lane and a 32-byte hash. Unknown logins perform a dummy verification; at most two password operations run concurrently per app instance. Passwords/hashes are never returned or logged. Email is trimmed/lowercased, validated and protected by a required unique index. Names are trimmed, nonempty and at most 80 characters.
 
 Access credentials are random opaque tokens, not client-decodable role claims. SHA-256 hashes of high-entropy credentials are stored in `authSessions`. Access lasts 15 minutes, clamped to the session's fixed 30-day maximum. Refresh includes a random family authenticator and a rotated random secret; only hashes are stored. The session ID identifies its revocation family. Every protected request verifies the active session and current database account/status/version; role checks use the current account.
 
@@ -32,16 +32,17 @@ These operations have no GraphQL Variables. Prerequisites are prepared platform 
 | POST /auth/login | `{ "email": "person@example.test", "password": "<password>" }` | 200; user and session grant | 401 wrong/unknown/inactive credentials; 429 limit |
 | POST /auth/refresh | Native refresh JSON; browser `{}` + cookies/CSRF | 200; rotated grant | 401 missing/expired/replayed credential; 403 browser origin/CSRF |
 | POST /auth/logout | Native refresh JSON; browser `{}` + cookies/CSRF | 200 `{ "success": true }`; browser cookies cleared | 400 malformed body; 403 origin/CSRF; 429 limit |
+| POST /auth/password/reset | `{ "recoveryToken": "<operator-issued proof>", "password": "<12–128 chars>" }`; browser origin/CSRF still required | 200 `{ "success": true }`; all sessions revoked, no login grant | 400 invalid/private fields; 401 invalid/expired/used proof; 429 limit |
 | GET /auth/me | Native bearer or browser access cookie | 200 `{ "user": { ... } }` | 401 invalid/expired/revoked session; 403 inactive account |
 | GET /auth/csrf | Browser headers only | 200 `{ "csrfToken": "<nonce>" }` | 400 wrong client; 403 missing/unapproved Origin |
 
 Public user shape: `{ id, email, name, role, status, createdAt }`. Native grants are `{ user, accessToken, refreshToken, accessExpiresAt, sessionExpiresAt }`. Browser grants are `{ user, accessExpiresAt, sessionExpiresAt }` plus cookies. Do not print, export or commit real credentials. Signup user+session and refresh changes use MongoDB transactions; signup session failure rolls the user insertion back.
 
-Limits use MongoDB fixed one-minute buckets: signup 10/IP, login 20/IP and 5/normalized email, other auth endpoints 60/IP. Persisted attempt identifiers are hashes, not raw email/IP. TTL removes expired buckets eventually. Forwarded IP headers are not trusted by default; review proxy configuration before production. Missing required auth indexes returns 503 instead of accepting unprotected duplicate emails or unbounded rate records.
+Limits use MongoDB fixed one-minute buckets: signup 10/IP, login 20/IP and 5/normalized email, reset 10/IP and 5/hashed proof, other auth endpoints 60/IP. Persisted attempt identifiers are hashes, not raw email/IP. TTL removes expired buckets eventually. Forwarded IP headers are not trusted by default; review proxy configuration before production. Missing required auth indexes returns 503 instead of accepting unprotected duplicate emails or unbounded rate records.
 
 ## Explicit schema/admin commands
 
-`npm run db:prepare` creates `users`, `authSessions`, `authAttempts`, `auditEvents`, `platformSettings` and their declared indexes, and inserts the singleton administrator policy if absent. It inserts no account, removes no record and drops no index. Automatic collection/index creation stays disabled in connection options. A conflicting index/setup failure needs inspection, not destructive automatic repair.
+`npm run db:prepare` creates `users`, `authSessions`, `authAttempts`, `auditEvents`, `platformSettings`, `devices`, `pairingRequests` and their declared indexes, and inserts the singleton administrator policy if absent. It inserts no account, removes no record and drops no index. Automatic collection/index creation stays disabled in connection options. A conflicting index/setup failure needs inspection, not destructive automatic repair.
 
 `npm run admin:create` requires `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_NAME`, `ADMIN_BOOTSTRAP_PASSWORD`. Supply the password via a local hidden prompt/secret manager, not a literal command line, shell history, committed file or chat. For an interactive Bash terminal:
 
@@ -56,8 +57,12 @@ unset ADMIN_BOOTSTRAP_EMAIL ADMIN_BOOTSTRAP_NAME ADMIN_BOOTSTRAP_PASSWORD
 
 Bootstrap acquires the shared administrator policy and creates a new ADMIN and `ADMIN_BOOTSTRAPPED` audit event in one transaction. It never promotes/overwrites an existing email, supplies a default password or promotes the first signup. The audit stores a subject ID, local-command actor type and time, without credentials/content. This task tested the CLI using disposable fixtures only and did not create a real administrator.
 
+## Operator-assisted password recovery
+
+`npm run recovery:issue` is an explicit privileged local command requiring a verified ACTIVE account, private-pipe output opt-in and separate diagnostic stream. It issues one 15-minute random proof, storing only a hidden hash/expiry/auth-version tuple on the account. There is no production HTTP/GraphQL issuer. `POST /auth/password/reset` consumes the proof and atomically updates the Argon2id hash, advances auth version, revokes all sessions and writes an audit event; role/status and phone files are preserved. Browser success clears cookies. No automatic login or email delivery occurs. See [exact CLI invocation, requests, limits and setup](password-recovery.md).
+
 ## Verification and remaining work
 
-[Postman requests/results](../docs/Postman_Auth_Verification.md) and `test/auth.integration-spec.ts` cover real disposable MongoDB behavior. Tests mutate only generated fixtures to simulate expiry/blocking/roles and close/drop their own resources. Real MongoDB administrator/GraphQL checks are recorded in [account operations](platform-accounts.md). Device-bound sessions now additionally check current enrollment status during access authentication and refresh. Native secure storage, real browser HTTPS, email/recovery delivery and connected-stream revocation remain unimplemented or unverified. No private phone recording is created, accessed or erased by any auth command.
+[Postman requests/results](../docs/Postman_Auth_Verification.md) and `test/auth.integration-spec.ts` cover real disposable MongoDB behavior. Tests mutate only generated fixtures to simulate expiry/blocking/roles and close/drop their own resources. Real MongoDB administrator/GraphQL checks are recorded in [account operations](platform-accounts.md). Device-bound sessions now additionally check current enrollment status during access authentication and refresh. Native secure storage, real browser HTTPS, email/notification delivery and connected-stream revocation remain unimplemented or unverified. [Operator-assisted recovery](password-recovery.md) is implemented, including the private-pipe CLI and HTTP reset; its proof hash/expiry/version fields are hidden from ordinary selection and public DTOs. No private phone recording is created, accessed or erased by any auth command.
 
 Implementation references: [Nest validation](https://docs.nestjs.com/techniques/validation), [OWASP password storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html), [OWASP CSRF prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).

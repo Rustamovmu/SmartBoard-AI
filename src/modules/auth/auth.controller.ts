@@ -18,7 +18,13 @@ import {
   type AuthRequest,
 } from './auth-transport.service';
 import { AuthRateLimitService } from './auth-rate-limit.service';
-import { LoginDto, RefreshDto, SignupDto } from './dto/auth.dto';
+import {
+  LoginDto,
+  RefreshDto,
+  ResetPasswordDto,
+  SignupDto,
+} from './dto/auth.dto';
+import { PasswordRecoveryService } from './password-recovery.service';
 import { AuthEntryGuard } from './guards/auth-entry.guard';
 import {
   CurrentAccountGuard,
@@ -34,6 +40,7 @@ export class AuthController {
     private readonly transport: AuthTransportService,
     private readonly members: MembersService,
     private readonly limits: AuthRateLimitService,
+    private readonly recovery: PasswordRecoveryService,
   ) {}
 
   @Get('csrf')
@@ -113,5 +120,20 @@ export class AuthController {
   @UseGuards(CurrentAccountGuard)
   me(@Req() request: CurrentAccountRequest) {
     return { user: this.members.publicMember(request.account.user) };
+  }
+
+  @Post('password/reset')
+  @HttpCode(200)
+  async resetPassword(
+    @Body() input: ResetPasswordDto,
+    @Req() request: AuthRequest,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.recovery.reset(
+      input.recoveryToken,
+      input.password,
+    );
+    if (request.authTransport === 'browser') this.transport.clear(response);
+    return result;
   }
 }
