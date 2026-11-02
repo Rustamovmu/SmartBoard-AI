@@ -15,6 +15,8 @@ export class AuthSession {
   _id: string;
   @Prop({ required: true })
   userId: string;
+  @Prop({ type: String, default: null })
+  deviceId: string | null;
   @Prop({ required: true })
   familyId: string;
   @Prop({ required: true, select: false })
@@ -43,3 +45,4 @@ AuthSessionSchema.index(
   { expireAfterSeconds: 0, name: 'session_expiry' },
 );
 AuthSessionSchema.index({ userId: 1, revokedAt: 1 });
+AuthSessionSchema.index({ deviceId: 1, revokedAt: 1 });

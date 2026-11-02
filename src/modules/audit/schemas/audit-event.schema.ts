@@ -12,14 +12,25 @@ export class AuditEvent {
   _id: string;
   @Prop({
     type: String,
-    enum: ['ADMIN_BOOTSTRAPPED', 'ACCOUNT_ACCESS_CHANGED'],
+    enum: [
+      'ADMIN_BOOTSTRAPPED',
+      'ACCOUNT_ACCESS_CHANGED',
+      'DEVICE_ENROLLED',
+      'DEVICE_REVOKED',
+    ],
     required: true,
   })
   action: string;
-  @Prop({ type: String, enum: ['LOCAL_COMMAND', 'ADMIN'], required: true })
+  @Prop({
+    type: String,
+    enum: ['LOCAL_COMMAND', 'ADMIN', 'USER'],
+    required: true,
+  })
   actorType: string;
   @Prop({ type: String })
   actorUserId?: string;
+  @Prop({ type: String })
+  subjectDeviceId?: string;
   @Prop({ type: String, enum: ['USER', 'ADMIN'] })
   previousRole?: string;
   @Prop({ type: String, enum: ['USER', 'ADMIN'] })

@@ -32,13 +32,78 @@ input AccountsInput {
   status: AccountState
 }
 
+input AdminDevicesInput {
+  page: Int! = 1
+  pageSize: Int! = 20
+  status: DeviceState
+  userId: ID!
+}
+
+input ConfirmDevicePairingInput {
+  code: String!
+}
+
+input CreateDevicePairingInput {
+  label: String!
+  platform: DevicePlatform!
+}
+
+type DevicePage {
+  items: [EnrolledDevice!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+type DevicePairing {
+  code: String!
+  expiresAt: String!
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+}
+
+enum DeviceState {
+  ACTIVE
+  REVOKED
+}
+
+input DevicesInput {
+  page: Int! = 1
+  pageSize: Int! = 20
+  status: DeviceState
+}
+
+type EnrolledDevice {
+  createdAt: String!
+  id: ID!
+  label: String!
+  platform: DevicePlatform!
+  revokedAt: String
+  status: DeviceState!
+  userId: ID!
+}
+
 type Mutation {
+  adminRevokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
   adminUpdateAccountAccess(input: UpdateAccountAccessInput!): Account!
+  confirmDevicePairing(input: ConfirmDevicePairingInput!): EnrolledDevice!
+  createDevicePairing(input: CreateDevicePairingInput!): DevicePairing!
+  revokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
 }
 
 type Query {
   adminAccounts(input: AccountsInput!): AccountPage!
+  adminDevices(input: AdminDevicesInput!): DevicePage!
   currentAccount: Account!
+  currentDevice: EnrolledDevice
+  myDevices(input: DevicesInput!): DevicePage!
+}
+
+input RevokeDeviceInput {
+  id: ID!
 }
 
 input UpdateAccountAccessInput {

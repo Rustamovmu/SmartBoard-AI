@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PlatformGraphqlModule } from './graphql/platform-graphql.module';
+import { DeviceEnrollmentModule } from './modules/device-enrollment/device-enrollment.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PlatformGraphqlModule } from './graphql/platform-graphql.module';
     AuthModule,
     AuditModule,
     AdminModule,
+    DeviceEnrollmentModule,
     PlatformGraphqlModule,
   ],
   controllers: [AppController],

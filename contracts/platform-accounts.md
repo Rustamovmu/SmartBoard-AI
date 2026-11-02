@@ -1,6 +1,6 @@
 # Platform account GraphQL contract — version 1
 
-Implemented on 2026-11-02. The versioned [schema](schema.graphql) exposes three operations at `POST /graphql`. Authentication stays at `/auth/*`; enrollment and published-content operations are not implemented yet. No lecture/media fields, upload scalar, subscription or phone-file command exists.
+Implemented on 2026-11-02. The account surface in the versioned [schema](schema.graphql) exposes three operations at `POST /graphql`. [Device enrollment](device-enrollment.md) adds separate operations on the same boundary. Authentication stays at `/auth/*`; published-content operations are not implemented yet. No lecture/media fields, upload scalar, subscription or phone-file command exists.
 
 ## Transport and prerequisites
 
@@ -59,7 +59,7 @@ Every actual change atomically increments the target's `authVersion`, revokes al
 
 The last ACTIVE ADMIN cannot be demoted, blocked or soft deleted: `CONFLICT`. Other administrators may perform those changes, and self-changes are allowed when another active administrator remains. All administrator mutations and CLI bootstrap first update the same singleton policy inside their MongoDB transaction. This serializes competing changes; retrying transactions recheck actor permissions and the active-admin count. A missing policy fails closed with `SERVICE_UNAVAILABLE`, requiring explicit setup. No count-only protection or automatic first-user promotion is used.
 
-Connected streams/devices do not exist yet. This implementation revokes authentication sessions; coordinated stream/device revocation remains part of their future implementation.
+Device enrollment now binds native sessions to device records and provides audited device revocation. Account access changes revoke those bound sessions along with every other account session. Device inventory is preserved; reactivation restores no credentials. Connected streams do not exist yet; active-stream shutdown remains future work.
 
 ## Errors, disposable examples and cleanup
 

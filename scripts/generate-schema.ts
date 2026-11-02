@@ -7,6 +7,7 @@ import {
 import { lexicographicSortSchema, printSchema } from 'graphql';
 import { writeFile } from 'node:fs/promises';
 import { AdminResolver } from '../src/modules/admin/admin.resolver';
+import { DeviceEnrollmentResolver } from '../src/modules/device-enrollment/device-enrollment.resolver';
 
 async function main() {
   // Builds decorator metadata only: no application DB, host or accounts.
@@ -15,7 +16,9 @@ async function main() {
     { logger: false },
   );
   try {
-    const schema = await app.get(GraphQLSchemaFactory).create([AdminResolver]);
+    const schema = await app
+      .get(GraphQLSchemaFactory)
+      .create([AdminResolver, DeviceEnrollmentResolver]);
     await writeFile(
       'contracts/schema.graphql',
       `${printSchema(lexicographicSortSchema(schema))}\n`,

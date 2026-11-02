@@ -12,7 +12,7 @@ import {
 import type { Member } from '../../members/schemas/member.schema';
 
 export interface CurrentAccountRequest extends AuthRequest {
-  account: { user: Member; sessionId: string };
+  account: { user: Member; sessionId: string; deviceId?: string | null };
 }
 
 @Injectable()

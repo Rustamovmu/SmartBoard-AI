@@ -1,6 +1,6 @@
 # Authentication contract — version 1
 
-Implemented HTTP contract, separate from future GraphQL, enrollment and analysis. [Public types](../src/contracts/auth-v1.ts) have no Nest/Mongoose imports. IDs are opaque UUIDs and timestamps ISO UTC. No lecture ID, file path, note, media or OCR field is accepted.
+Implemented HTTP identity contract, separate from [GraphQL accounts](platform-accounts.md), [device enrollment](device-enrollment.md) and future analysis. [Public types](../src/contracts/auth-v1.ts) have no Nest/Mongoose imports. IDs are opaque UUIDs and timestamps ISO UTC. No lecture ID, file path, note, media or OCR field is accepted.
 
 ## Credential policy
 
@@ -10,7 +10,7 @@ Access credentials are random opaque tokens, not client-decodable role claims. S
 
 Refresh rotates both credentials atomically and immediately invalidates old access. Reusing an old refresh credential with a valid family authenticator revokes that family. Concurrent refreshes do not both succeed: one rotation can succeed, then replay revokes the family. **Clients must serialize refresh and sign in again after a lost refresh response.** There is no retry/grace archive or recovery of rotated raw credentials. Independent logins are separate families. Logout is idempotent and revokes only the presented family, including a stale valid family credential. Expiry/revocation checks do not rely on eventual TTL deletion.
 
-Public signup creates USER/ACTIVE only; role/status/user IDs and all unknown fields are rejected. [Administrator GraphQL access changes](platform-accounts.md) transactionally advance `authVersion`, revoke all target sessions and protect the last active administrator, including concurrent changes. Connected-stream revocation requires the future WebSocket/enrollment implementation; this increment does not claim it.
+Public signup creates USER/ACTIVE only; role/status/user IDs and all unknown fields are rejected. [Administrator GraphQL access changes](platform-accounts.md) transactionally advance `authVersion`, revoke all target sessions and protect the last active administrator, including concurrent changes. Connected-stream revocation requires the future WebSocket implementation; this increment does not claim it.
 
 ## Shared request rules
 
@@ -58,6 +58,6 @@ Bootstrap acquires the shared administrator policy and creates a new ADMIN and `
 
 ## Verification and remaining work
 
-[Postman requests/results](../docs/Postman_Auth_Verification.md) and `test/auth.integration-spec.ts` cover real disposable MongoDB behavior. Tests mutate only generated fixtures to simulate expiry/blocking/roles and close/drop their own resources. Real MongoDB administrator/GraphQL checks are recorded in [account operations](platform-accounts.md). Native secure storage, real browser HTTPS, enrollment, email/recovery delivery and connected-stream revocation remain unimplemented or unverified. No private phone recording is created, accessed or erased by any auth command.
+[Postman requests/results](../docs/Postman_Auth_Verification.md) and `test/auth.integration-spec.ts` cover real disposable MongoDB behavior. Tests mutate only generated fixtures to simulate expiry/blocking/roles and close/drop their own resources. Real MongoDB administrator/GraphQL checks are recorded in [account operations](platform-accounts.md). Device-bound sessions now additionally check current enrollment status during access authentication and refresh. Native secure storage, real browser HTTPS, email/recovery delivery and connected-stream revocation remain unimplemented or unverified. No private phone recording is created, accessed or erased by any auth command.
 
 Implementation references: [Nest validation](https://docs.nestjs.com/techniques/validation), [OWASP password storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html), [OWASP CSRF prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).

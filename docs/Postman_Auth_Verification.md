@@ -1,6 +1,6 @@
 # Postman authentication verification — 2026-10-25
 
-The user explicitly requested Postman. The original run used 25 ordered requests; the current [saved collection](../postman/SmartBoardAI.postman_collection.json) contains 41 ordered requests and documented response shapes without credentials. [Sanitized execution evidence](../postman/verification-2026-10-25.json) records the actual official Postman CLI 1.76.0 result: **25 requests, 86 assertions, zero failures, exit 0**. This is a real HTTP run against the Nest app with real isolated MongoDB, separate from the Jest results.
+The user explicitly requested Postman. The original run used 25 ordered requests; the current [saved collection](../postman/SmartBoardAI.postman_collection.json) contains 57 ordered requests and documented response shapes without credentials. [Sanitized execution evidence](../postman/verification-2026-10-25.json) records the actual official Postman CLI 1.76.0 result: **25 requests, 86 assertions, zero failures, exit 0**. This is a real HTTP run against the Nest app with real isolated MongoDB, separate from the Jest results.
 
 Covered: health and unique disposable-host confirmation; native signup/current account; rejecting ADMIN/private fields; wrong password; credential rotation; old access rejection; refresh replay/family revocation; fresh login/logout; browser CSRF challenge/rejection; secure cookie login/current account/refresh/logout; native Origin rejection; forbidden media API. Cookie assertions verify Secure/HttpOnly/Strict/no Domain attributes. Actual browser HTTPS delivery and native credential storage remain unverified.
 
@@ -20,7 +20,7 @@ The wrapper closes the listener and removes only the exact guarded database in `
 
 ## Desktop import and optional run
 
-Import `postman/SmartBoardAI.postman_collection.json` into Postman. It is named `SmartBoardAI — Auth and administrator accounts v1`, keeping unrelated collections untouched. This task opened the desktop import dialog and selected the artifact, but macOS ScreenCaptureKit repeatedly failed afterward. **Successful desktop import and desktop execution were not verified.** No cloud collection link/run publication is claimed. The official CLI run above is verified.
+Import `postman/SmartBoardAI.postman_collection.json` into Postman. It is named `SmartBoardAI — Auth, administrator accounts and enrollment v1`, keeping unrelated collections untouched. This task opened the desktop import dialog and selected the artifact, but macOS ScreenCaptureKit repeatedly failed afterward. **Successful desktop import and desktop execution were not verified.** No cloud collection link/run publication is claimed. The official CLI run above is verified.
 
 For a desktop run:
 
@@ -28,7 +28,7 @@ For a desktop run:
 npm run postman:serve
 ```
 
-Copy the printed `baseUrl` and `testRunId` into the collection variables and run all 41 requests once in order. Keep fixture credentials/tokens in runtime variables; do not persist resolved values, enable raw response persistence, publish results, or use real accounts. The defaults refuse to run against an unconfirmed service. Browser scenarios manually supply cookie headers over loopback for wire checks, without weakening the Secure cookies used by the app.
+Copy the printed `baseUrl` and `testRunId` into the collection variables and run all 57 requests once in order. Keep fixture credentials/tokens in runtime variables; do not persist resolved values, enable raw response persistence, publish results, or use real accounts. The defaults refuse to run against an unconfirmed service. Browser scenarios manually supply cookie headers over loopback for wire checks, without weakening the Secure cookies used by the app.
 
 Stop the foreground host with Ctrl-C afterward; it also has a 15-minute timeout. Multiple shutdown signals share one guarded cleanup operation. The first manual npm/PTY interruption in this task stopped its listener before the normal cleanup message; the exact recorded disposable database was then checked and removed explicitly. The repeatable wrapper was added and successfully verified automatic cleanup. The user's `SmartBoardAI` database and its empty pre-existing collection were not used for test writes or cleanup.
 
@@ -36,7 +36,7 @@ Stop the foreground host with Ctrl-C afterward; it also has a 15-minute timeout.
 
 Real MongoDB Jest integration additionally covers transactional signup rollback, concurrent duplicate email/signup, concurrent refresh, forged family proof, expiry independent of TTL, absolute-session clamping, current roles/status, isolated logout, rate limits, malformed/oversized bodies, unknown/operator inputs, CLI admin bootstrap/audit and forbidden collection names. See [development progress](Development_progress.md) for final suite counts and exact changed files.
 
-The 2026-10-25 results above did not validate last-admin mutation protection or GraphQL; those now have the additional dated evidence below. Device enrollment, WebSockets, real browsers/phones, vision, physical camera behavior and deployment retention remain unverified. Postman is a platform API verification tool; no private lecture/media fixture is sent to it.
+The 2026-10-25 results above did not validate last-admin mutation protection or GraphQL; those now have the additional dated evidence below. Device enrollment now has additional dated API evidence below. WebSockets, real browsers/phones, vision, physical camera behavior and deployment retention remain unverified. Postman is a platform API verification tool; no private lecture/media fixture is sent to it.
 
 ## 2026-11-02 — GraphQL administrator verification
 
@@ -45,3 +45,11 @@ The expanded collection passed with official Postman CLI 1.76.0: **41 requests, 
 After proving its generated database is empty, the test host prepares the administrator policy and creates/audits one synthetic administrator in that disposable database only. Collection runtime variables derive fixture credentials from the random host marker; these are test-only, deliberately public to local test clients, and never production credentials. There is no HTTP bootstrap route. MongoDB and real bootstrap credentials are stripped from the CLI environment. The wrapper confirmed its exact database removal and host shutdown; the final loopback port had no remaining listener.
 
 Additional Jest integration verifies simultaneous self-demotions and cross-blocks, audit-failure rollback, null/operator/UUID/bounds rejection, real browser-wire CSRF/origin checks and missing-policy failure. Desktop import/run remains unverified because of the earlier macOS capture failure. The saved collection is reviewable; no cloud publication or desktop success is claimed.
+
+## 2026-11-02 — Device enrollment verification
+
+Official Postman CLI 1.76.0 passed **57 requests and 215 assertions, zero failures, exit 0**. [Sanitized evidence](../postman/verification-2026-11-02-enrollment.json) records counts/scope only. Sixteen new requests cover native pairing, independent same-account approval, rejection of self/foreign-admin approval and code replay, session binding, owner/admin pagination, USER rejection on administrator device reads, private-field rejection, revocation of access/refresh and survival of an unrelated session. Enrollment uses its own synthetic account, keeping the original fixture's login-rate budget separate.
+
+The original 41 request definitions are preserved except request 35's expected fixed `CONFLICT` message, intentionally generalized from account-specific wording to `Change conflicts with platform policy.` for the shared account/device error adapter. Codes and HTTP statuses are unchanged. Earlier expanded runs stopped at that stale assertion; all their hosts/databases were cleaned up. The runner now reports only the last known static request name on CLI failure, never raw failure output that could contain credentials or response bodies.
+
+The final wrapper confirmed exact disposable database removal and host closure. No cloud event reporting, live response example, raw report/cookie jar, application DB change or desktop run was introduced. Jest additionally passed real expiry-independent-of-TTL, supersession, concurrent approval/cap, ownership, current device state, refresh/revocation and account-block races, audit rollback, rate-limit and browser-wire CSRF/origin cases. Native storage, trusted browser HTTPS, physical phones and active WebSocket revocation remain outside this API verification.

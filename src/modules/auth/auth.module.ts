@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from '../../database/database.module';
 import { MembersModule } from '../members/members.module';
+import { DeviceRecordsModule } from '../device-enrollment/device-records.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthConfig } from './auth.config';
@@ -27,6 +28,7 @@ import { AuthSchemaService } from './auth-schema.service';
   imports: [
     DatabaseModule,
     MembersModule,
+    DeviceRecordsModule,
     MongooseModule.forFeature([
       { name: AUTH_SESSION_MODEL, schema: AuthSessionSchema },
       { name: AUTH_ATTEMPT_MODEL, schema: AuthAttemptSchema },

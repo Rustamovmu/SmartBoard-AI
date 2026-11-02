@@ -14,9 +14,10 @@ Follow [AGENTS.md](AGENTS.md), [backend plan](docs/Backend_plan.md) and [fronten
 - Current account/session/status checks and an administrator guard. Public signup creates USER only.
 - Explicit local schema setup and administrator bootstrap with a transactional audit record.
 - Authenticated GraphQL current account and admin account pagination/access changes, transactional audit/session revocation and concurrent last-admin protection. See [account operations](contracts/platform-accounts.md) and [schema](contracts/schema.graphql).
+- Native-session device pairing with same-account approval, owner/admin device lists and audited revocation of bound sessions. See [enrollment](contracts/device-enrollment.md). Physical phone identity/storage and connected streams are not implemented by this API.
 - Real MongoDB integration tests using guarded disposable databases, plus a repeatable [Postman collection and verification](docs/Postman_Auth_Verification.md).
 
-Enrollment, account recovery, published-content operations, WebSockets, Python vision and frontend/native storage are still planned. No lecture upload/library/archive or phone-wipe API exists. No fully offline AI or physical phone storage proof is claimed.
+Account recovery, published-content operations, WebSockets, Python vision and frontend/native storage are still planned. No lecture upload/library/archive or phone-wipe API exists. No fully offline AI or physical phone storage proof is claimed.
 
 ## Setup and operation
 
@@ -50,7 +51,7 @@ There is no npm `typecheck` script. Lint is non-fixing; build writes ignored out
 
 `postman:test` uses the official pinned Postman CLI, confirms a unique test-host marker before auth requests, disables cloud event reporting and closes/removes its own host/database in `finally`. No Postman login/API key is needed for the local file run. `postman:serve` supports optional desktop runs and stops automatically after 15 minutes. See [Postman verification](docs/Postman_Auth_Verification.md).
 
-Checks cover implemented identity/GraphQL account behavior, not enrollment, real browser HTTPS, native secure-storage bridges, phone recording, vision or deployment-wide no-retention. Known dependency advisories and outstanding acceptance are in the progress record.
+Checks cover implemented identity, GraphQL account and device-enrollment behavior, not real browser HTTPS, native secure-storage bridges, phone recording, vision or deployment-wide no-retention. Known dependency advisories and outstanding acceptance are in the progress record.
 
 ## Read-only database inspection
 

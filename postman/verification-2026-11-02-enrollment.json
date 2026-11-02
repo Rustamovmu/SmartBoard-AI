@@ -1,0 +1,29 @@
+{
+  "date": "2026-11-02",
+  "timezone": "Asia/Seoul",
+  "runner": "Official Postman CLI",
+  "runnerVersion": "1.76.0",
+  "command": "npm run postman:test",
+  "requests": 57,
+  "assertions": 215,
+  "failedRequests": 0,
+  "failedAssertions": 0,
+  "exitCode": 0,
+  "fixture": "Generated sbt_<32 hex digits> database via MONGODB_TEST_URI, verified empty before synthetic accounts/setup",
+  "scope": [
+    "prior authentication and account administration scenarios",
+    "native pairing initiation and same-account independent-session approval",
+    "self/foreign-admin approval and replay rejection",
+    "bound session lookup and owner/admin pagination",
+    "USER rejection on admin device list and private-field rejection",
+    "device revocation rejects access/refresh while unrelated session remains usable"
+  ],
+  "loopbackOnly": true,
+  "cloudEventReporting": false,
+  "disposableDatabaseRemoved": true,
+  "temporaryHostClosed": true,
+  "desktopImportAndRunVerified": false,
+  "realBrowserHttpsVerified": false,
+  "nativeDeviceStorageVerified": false,
+  "applicationDatabaseChanged": false
+}

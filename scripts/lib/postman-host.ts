@@ -10,6 +10,7 @@ import { configureApplication } from '../../src/app.setup';
 import { AuthSchemaService } from '../../src/modules/auth/auth-schema.service';
 import { AuditService } from '../../src/modules/audit/audit.service';
 import { AdminPolicyService } from '../../src/modules/admin/admin-policy.service';
+import { DeviceSchemaService } from '../../src/modules/device-enrollment/device-schema.service';
 import { MembersService } from '../../src/modules/members/members.service';
 import { PasswordService } from '../../src/modules/auth/password.service';
 import {
@@ -57,6 +58,7 @@ export async function createPostmanTestHost() {
     await app.get(AuthSchemaService).prepare();
     await app.get(AuditService).prepare();
     await app.get(AdminPolicyService).prepare();
+    await app.get(DeviceSchemaService).prepare();
     const testRunId = name.slice('sbt_'.length);
     // Synthetic fixture only, after proving this exact disposable DB was empty.
     // Collection scripts derive these credentials in runtime variables; no real admin.

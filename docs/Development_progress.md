@@ -255,3 +255,61 @@ src/modules/auth/auth.module.ts
 test/admin.integration-spec.ts
 test/auth.integration-spec.ts
 ```
+
+## 2026-11-02 — Device enrollment and revocation increment
+
+Implemented a separate `device-enrollment` module with strict `devices`/`pairingRequests` schemas and explicit non-destructive setup. GraphQL adds `createDevicePairing`, `confirmDevicePairing`, `currentDevice`, `myDevices`, `adminDevices`, `revokeDevice` and `adminRevokeDevice`. The [enrollment contract](../contracts/device-enrollment.md) specifies exact queries, Variables, roles, bounds, errors, prerequisites and cleanup. Schema generation includes the resolver without an application connection/listener.
+
+A native account session creates a five-minute random 256-bit code; only its SHA-256 hash is retained. A different session of the same owner approves it; even an admin cannot approve another owner's code. Approval atomically creates the device, binds the target session, consumes the request and audits IDs/action/time only. Replacing a pending request invalidates its old code. Expiry/single-use checks do not depend on TTL cleanup. Account-scoped limits cover failed attempts, and a serialized 20-active-device cap prevents concurrent overflow.
+
+Owners/admins can list and revoke permitted devices. Revocation atomically marks the device, revokes all bound sessions and audits the action; repeating it is a no-op. Access authentication and refresh independently verify current bound-device owner/status/existence. Refresh preserves binding and session lifetime. Enrollment/revocation share the existing administrator policy write with account access changes, ensuring retries recheck current actor/account state. Account blocking invalidates every session; reactivation restores none. Fresh login remains unbound and requires explicit new enrollment. This binds an auth-session family, not attested permanent hardware identity or a reusable device credential. No lecture/media, phone-file access, remote wipe, new dependency or frontend/Python target was introduced.
+
+Reference inspection: read-only TripLink auth-session/auth-records services and Nestar auth guard. These supply current-session patterns but no equivalent single-use device pairing/local-storage implementation; the new contract follows this project's plans. Used official Mongoose transaction/retry and Node cryptographic-randomness documentation linked in the contract. Sibling projects were unchanged.
+
+Validation on 2026-11-02: non-fixing lint passed with no warnings; non-writing TypeScript inspection passed; unit tests passed (14 suites, 77 tests); HTTP E2E passed (2 suites, 18 tests); real disposable MongoDB integration passed (3 suites, 46 tests). Fifteen new integration cases cover hashed codes, session binding/refresh, supersession, expiry independent of TTL, self/foreign/replay rejection, ownership/admin access, revocation/no-op/self-revocation, current device state, audit rollback, concurrent approval/device cap, account-block/reactivation and refresh/revocation races, validation, rate limits, missing indexes/idempotent setup and browser-wire CSRF/origin. Nest build and versioned schema generation passed; the existing integration schema-equality check passed. Initial sandbox MongoDB/loopback runs were blocked; approved reruns passed. Their failures are not counted as passing checks.
+
+Official Postman CLI 1.76.0 passed 57 requests/215 assertions with zero failures and exit 0. Sixteen new enrollment requests use a separate synthetic owner. One prior assertion was updated for the deliberately generalized fixed GraphQL conflict message; stable codes/statuses are unchanged. Earlier expanded runs failed on that stale assertion and cleaned up; the runner now reports only a known static request name on failure, preserving credential redaction. See [Postman evidence](Postman_Auth_Verification.md) and the [sanitized result](../postman/verification-2026-11-02-enrollment.json). No cloud reporting, saved live responses or raw credential reports were added.
+
+All integration/Postman fixtures used exact generated `sbt_<32 hex digits>` databases through the dedicated test URI, checked empty before setup and identity-guarded before cleanup. Own temporary loopback hosts/connections were closed and owned databases removed. No application setup, application-record mutation, administrator bootstrap or environment change was performed. Before using enrollment on the application DB, an operator must run explicit `db:prepare`; application readiness still checks topology/auth indexes only. Prior empty unexpected-collection and dependency-advisory findings remain unresolved; no new audit/deployment acceptance is claimed.
+
+Final review: compiled `dist/app.module.js` imports without starting an app; task TypeScript/JSON and the new contract pass Prettier; all 64 local Markdown links in changed documents resolve; JSON, secret/artifact scan and `git diff --check` pass. The final Postman port has no remaining listener. The reviewed inventory includes every untracked task file.
+
+Remaining B2: admin-assisted recovery and coordinated revocation of future connected streams. WebSockets/analysis grants, permanent device reattachment credentials, native Keychain/Keystore adapters, trusted-browser HTTPS, physical phone UI/storage, vision and deployment-wide retention remain unimplemented/unverified. Device revocation affects platform access only; private local files remain outside backend authority.
+
+### Exact changed files — device enrollment
+
+```text
+AGENTS.md
+README.md
+contracts/authentication.md
+contracts/device-enrollment.md
+contracts/errors.md
+contracts/platform-accounts.md
+contracts/schema.graphql
+docs/Database_setup.md
+docs/Development_progress.md
+docs/Postman_Auth_Verification.md
+postman/SmartBoardAI.postman_collection.json
+postman/verification-2026-11-02-enrollment.json
+scripts/generate-schema.ts
+scripts/lib/postman-host.ts
+scripts/prepare-database.ts
+scripts/run-postman.ts
+src/app.module.ts
+src/graphql/graphql-errors.ts
+src/modules/audit/audit.service.ts
+src/modules/audit/schemas/audit-event.schema.ts
+src/modules/auth/auth-session.service.ts
+src/modules/auth/auth.module.ts
+src/modules/auth/guards/current-account.guard.ts
+src/modules/auth/schemas/auth-session.schema.ts
+src/modules/device-enrollment/device-enrollment.module.ts
+src/modules/device-enrollment/device-enrollment.resolver.ts
+src/modules/device-enrollment/device-enrollment.service.ts
+src/modules/device-enrollment/device-records.module.ts
+src/modules/device-enrollment/device-schema.service.ts
+src/modules/device-enrollment/dto/device.dto.ts
+src/modules/device-enrollment/schemas/device.schema.ts
+src/modules/device-enrollment/schemas/pairing-request.schema.ts
+test/device-enrollment.integration-spec.ts
+```

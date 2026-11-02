@@ -11,6 +11,10 @@ import { MembersService } from '../members/members.service';
 import type { Member } from '../members/schemas/member.schema';
 import { AUTH_SESSION_MODEL, AuthSession } from './schemas/auth-session.schema';
 import { digest, matchesHash, TokenService } from './token.service';
+import {
+  DEVICE_MODEL,
+  Device,
+} from '../device-enrollment/schemas/device.schema';
 
 export interface SessionGrant {
   user: Member;
@@ -26,6 +30,7 @@ export class AuthSessionService {
   constructor(
     @InjectModel(AUTH_SESSION_MODEL)
     private readonly sessions: Model<AuthSession>,
+    @InjectModel(DEVICE_MODEL) private readonly devices: Model<Device>,
     @InjectConnection() private readonly connection: Connection,
     private readonly members: MembersService,
     private readonly tokens: TokenService,
@@ -90,6 +95,18 @@ export class AuthSessionService {
     return user;
   }
 
+  private async deviceIsActive(
+    record: AuthSession,
+    transaction?: ClientSession,
+  ) {
+    if (!record.deviceId) return true; // Existing account-only sessions remain valid.
+    if (record.transport !== 'native') return false;
+    return !!(await this.devices
+      .exists({ _id: record.deviceId, userId: record.userId, status: 'ACTIVE' })
+      .session(transaction ?? null)
+      .exec());
+  }
+
   async authenticate(
     raw: string,
     transport: AuthTransport,
@@ -114,7 +131,9 @@ export class AuthSessionService {
     }
     const user = await this.currentUser(record, transaction);
     if (!user) throw new ForbiddenException();
-    return { user, sessionId: id };
+    if (!(await this.deviceIsActive(record, transaction)))
+      throw new UnauthorizedException();
+    return { user, sessionId: id, deviceId: record.deviceId ?? null };
   }
 
   async rotate(raw: string, transport: AuthTransport): Promise<SessionGrant> {
@@ -145,6 +164,14 @@ export class AuthSessionService {
       }
       const user = await this.currentUser(record, transaction);
       if (!user) return null;
+      if (!(await this.deviceIsActive(record, transaction))) {
+        await this.sessions.updateOne(
+          { _id: id },
+          { $set: { revokedAt: new Date() } },
+          { session: transaction },
+        );
+        return null;
+      }
       const accessToken = this.tokens.access(id);
       const refreshToken = this.tokens.refresh(id, familySecret);
       const accessExpiresAt = new Date(

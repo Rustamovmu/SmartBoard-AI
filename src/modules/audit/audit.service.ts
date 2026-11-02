@@ -53,4 +53,28 @@ export class AuditService {
       { session },
     );
   }
+
+  async deviceChanged(
+    action: 'DEVICE_ENROLLED' | 'DEVICE_REVOKED',
+    actor: string,
+    actorType: MemberRole,
+    subject: string,
+    device: string,
+    session: ClientSession,
+  ) {
+    await this.events.create(
+      [
+        {
+          _id: randomUUID(),
+          action,
+          actorType,
+          actorUserId: actor,
+          subjectUserId: subject,
+          subjectDeviceId: device,
+          createdAt: new Date(),
+        },
+      ],
+      { session },
+    );
+  }
 }
