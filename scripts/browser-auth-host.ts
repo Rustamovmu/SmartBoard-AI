@@ -27,10 +27,13 @@ async function main() {
     bodyParser: false,
     logger: false,
     abortOnError: false,
-    httpsOptions: {
-      cert: readFileSync(process.env.BROWSER_TEST_CERT),
-      key: readFileSync(process.env.BROWSER_TEST_KEY),
-    },
+    httpsOptions:
+      process.env.BROWSER_TEST_HTTP === '1'
+        ? undefined
+        : {
+            cert: readFileSync(process.env.BROWSER_TEST_CERT),
+            key: readFileSync(process.env.BROWSER_TEST_KEY),
+          },
   });
   const connection = app.get<Connection>(getConnectionToken());
   let owned = false;
@@ -52,7 +55,7 @@ async function main() {
       } finally {
         await app.close();
       }
-      process.send?.({ kind: 'closed', removed: owned });
+      if (process.connected) process.send?.({ kind: 'closed', removed: owned });
     })());
   const finish = () => {
     void close().then(
@@ -73,11 +76,15 @@ async function main() {
     configureApplication(app);
     await app.listen(0, '127.0.0.1');
     const port = (app.getHttpServer().address() as { port: number }).port;
-    process.send?.({
-      kind: 'ready',
-      origin: `https://localhost:${port}`,
-      database: name,
-    });
+    if (process.connected)
+      process.send?.({
+        kind: 'ready',
+        origin:
+          process.env.BROWSER_TEST_HTTP === '1'
+            ? `http://127.0.0.1:${port}`
+            : `https://localhost:${port}`,
+        database: name,
+      });
     timeout = setTimeout(finish, 15 * 60_000);
     // A private parent-process channel can expire/block synthetic fixtures.
     // It accepts opaque IDs only, checks the exact DB each time, and cannot
@@ -107,8 +114,12 @@ async function main() {
                 $set: { status: 'BLOCKED' },
               });
           } else throw new Error('Unknown fixture command.');
-          process.send?.({ kind: 'done', id: message.id });
-        })().catch(() => process.send?.({ kind: 'failed', id: message.id }));
+          if (process.connected)
+            process.send?.({ kind: 'done', id: message.id });
+        })().catch(() => {
+          if (process.connected)
+            process.send?.({ kind: 'failed', id: message.id });
+        });
       },
     );
     // stdin EOF is another parent-death signal for manually launched hosts.
