@@ -453,3 +453,12 @@ Validation passed: backend lint, non-writing TypeScript inspection and unit test
 Final source/diff/whitespace and scoped Markdown-link checks passed. Application HTTP/GraphQL logic, authentication schema, Postman definitions and generated contracts are unchanged; their earlier full regression results remain historical and were not rerun for this test-host transport change.
 
 Changed backend files: `scripts/browser-auth-host.ts`, `docs/Development_progress.md`. The web fix has a separate focused local commit; mobile is unchanged.
+
+
+## 2026-11-02 — Persist local backend port and release the occupied web port
+
+The user continued to receive the frontend launcher's clean port-3000 conflict. Read-only listener/cwd inspection identified backend app PID 74126 in this repository and its parent PID 74043 running the exact Nest `start --watch` command. The existing ignored backend `.env` had no PORT or browser-origin entry, so restarting the usual backend command kept selecting the source fallback 3000. No listener existed on 4001; a launcher code change could not release the backend's socket.
+
+Saved only `PORT=4001` and `AUTH_BROWSER_ORIGINS=https://localhost:3000` into the existing ignored `.env`, with a line-for-line check preserving all unrelated content and credentials. Node's actual env-file loader verified those two settings without printing credentials. After rechecking both ownership and the watch command, gracefully terminated only the confirmed watcher and app. The subsequent listener inventory found 3000, 4000 and 4001 free. No unrelated process, account, record, index, database URI or frontend/native file was changed. The app's source fallback remains 3000.
+
+The committed `.env.example` and README now explain the persistent local setting, so normal `npm run start:dev` no longer needs a repeatedly supplied inline override. The real ignored environment is not committed. Verification is operational configuration/ownership/socket inspection and documentation/link/whitespace review, rather than an authentication regression or real-account signup. No new service was left running by this fix. Changed tracked files: `.env.example`, `README.md`, `docs/Development_progress.md`.

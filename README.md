@@ -33,7 +33,16 @@ Configure the dedicated `SmartBoardAI` database first in ignored `.env`: `MONGOD
 
 The npm start variants and operational database/admin commands load `.env` if present; existing process environment wins. `db:prepare` explicitly creates allowed platform collections/indexes and the singleton administrator policy, preserving existing records/indexes. Auth fails closed until its unique-email and TTL indexes exist. No command bootstraps an administrator automatically. `admin:create` requires explicit operator details; see the authentication contract for secure input.
 
-`PORT` must be 1–65535, `HOST` an IP address or `localhost`, and `NODE_ENV` development/test/production. Port 4000 remains optional. Foreground hosts stop with Ctrl-C and close their own connections. Do not leave development servers running unnecessarily. Website authentication needs trusted HTTPS and same-site web/API deployment; cookie security is never disabled for HTTP development. Native loopback HTTP is used only for local verification.
+`PORT` must be 1–65535, `HOST` an IP address or `localhost`, and `NODE_ENV` development/test/production. The source fallback remains `127.0.0.1:3000` when PORT is unset. For the separate website's normal development flow, save these non-secret settings in the existing ignored backend `.env`, preserving its credentials:
+
+```dotenv
+PORT=4001
+AUTH_BROWSER_ORIGINS=https://localhost:3000
+```
+
+Then `npm run start:dev` uses backend HTTP 4001 on every restart. The website's `yarn dev` owns trusted HTTPS 3000 and its API TLS bridge owns 4000. Stop any old backend watcher still using 3000 before restarting; repeatedly launching the website cannot free another process's socket. This checkout's local settings were configured accordingly on 2026-11-02. Backend defaults, database URIs and application records are unchanged.
+
+Foreground hosts stop with Ctrl-C and close their own connections. Do not leave development servers running unnecessarily. Website authentication needs trusted HTTPS and same-site web/API deployment; cookie security is never disabled for HTTP development. Native loopback HTTP is used only for local verification.
 
 ## Validation
 
