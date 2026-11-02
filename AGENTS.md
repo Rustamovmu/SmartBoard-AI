@@ -71,7 +71,7 @@ Logging out, token expiry or account blocking must not erase the user's local fi
 The target has two separate repositories/projects, each with multiple source files:
 
 - Backend: this `SmartBord-AI` repository, currently a NestJS/TypeScript starter; a private Python vision service is planned.
-- Frontend: a separate project for the planned Next.js website and React/Vite/Capacitor mobile targets, with shared UI, contracts and local-library adapters. Its actual implementation location has not been established by this task.
+- Frontend: a separate project for the planned Next.js website and React/Vite/Capacitor mobile targets, with shared UI, contracts and local-library adapters. The user selected `/Users/a1234/Developer/SmartBord-AI-frontend` as its separate repository on 2026-11-02; implementation and physical-phone verification must be recorded separately.
 
 The plans' `whiteboard-backend/`, `whiteboard-frontend/`, `apps/api/`, `services/vision/` and shared-package trees are target examples, not existing paths. Keep the root-level backend structure until a separate explicit task authorizes restructuring. Do not rename/move repositories, create the frontend project or replace the directory tree without a task establishing the actual target location.
 

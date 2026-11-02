@@ -2,7 +2,7 @@
 
 Status: revised planning specification. This replaces the earlier server-primary/PWA-download plan. The current application has not yet been rebuilt to implement it.
 
-Companion: [Backend_plan.md](Backend_plan.md). Backend and frontend are separate projects; the directory names below are target examples. The frontend implementation location has not yet been established. Its planned repository contains website and mobile build targets.
+Companion: [Backend_plan.md](Backend_plan.md). Backend and frontend are separate projects; the directory names below are target examples. The user selected `/Users/a1234/Developer/SmartBord-AI-frontend` as the separate frontend/mobile repository on 2026-11-02. Selection establishes the target location, not implementation or phone-test acceptance. Its planned repository contains website and mobile build targets.
 
 ## 1. Non-negotiable behavior
 

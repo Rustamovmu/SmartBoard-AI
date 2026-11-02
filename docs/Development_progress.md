@@ -403,3 +403,15 @@ src/modules/auth/password-recovery.service.ts
 src/modules/members/schemas/member.schema.ts
 test/password-recovery.integration-spec.ts
 ```
+
+## 2026-11-02 — Application setup and frontend handoff
+
+The user authorized proceeding with application schema preparation, metadata verification and the subsequent mobile storage foundation. `npm run db:check` before setup reached `SmartBoardAI`: database up, transactions supported, 6 collections, 1 unexpected and 0 unexpected nonempty. It exited 1 for the preserved empty policy finding. `npm run db:prepare` completed with exit 0, preparing all seven declared platform collections/indexes and passing its auth/recovery/device index assertions. The administrator policy setup does not overwrite an existing revision. No account, recovery proof or password was created/changed; no record/index or unexpected collection was removed.
+
+The final `db:check` reached the same application DB and reported up/supported, 8 collections, 1 unexpected and 0 unexpected nonempty, again correctly exiting 1 for the same empty collection. It was preserved. Connections were closed; no HTTP host, CRUD fixture, administrator bootstrap or recovery action was run against application records. No credentials or record contents were printed and ignored `.env` was unchanged. The commands used approved network access. This is application setup evidence, separate from earlier disposable CRUD tests and physical-device/retention acceptance.
+
+The user selected `/Users/a1234/Developer/SmartBord-AI-frontend` for a new separate repository and requested both Android and iPhone verification. The destination did not yet exist during this setup increment. Local inventory found only the legacy `whiteboard detection/frontend` React/Vite project, which was left unchanged. The authorized new location is now recorded in AGENTS.md and the frontend plan. F1 implementation and actual phone results remain to be recorded in the separate repository; no mobile acceptance is claimed here.
+
+Environment inspection found an Android SDK with API 36/platform-tools/build-tools and Java 24. Full Xcode and Android Studio apps are absent; the selected Apple developer directory is Command Line Tools. iPhone native build/signing requires full Xcode before it can be verified. No SDK/IDE installation or device change was performed in this setup increment.
+
+Validation: actual setup and before/after metadata commands as above; local Markdown links, scoped diff and whitespace checks. Application tests/build were not rerun because no application source changed. Changed files: `AGENTS.md`, `docs/Database_setup.md`, `docs/Development_progress.md`, `docs/Frontend_plan.md`.
