@@ -2,7 +2,7 @@
 
 Status: revised planning specification. This replaces the earlier server-primary plan. This repository is being developed incrementally from a root-level NestJS starter; see [development progress](Development_progress.md) for implemented behavior. Historical single-user Mac storage is not implemented here.
 
-Companion: [Frontend_plan.md](Frontend_plan.md). Keep backend and frontend in separate repositories. The directory names below are target examples; this backend currently remains at its root-level `src/` layout.
+Companion: [Frontend_plan.md](Frontend_plan.md). Keep backend, mobile and website in their established separate repositories. The website is the user-selected `../smartbord-ai-frontend-web` Next.js 16.4.4 Pages Router project using Yarn; mobile remains `../SmartBord-AI-frontend` using npm. The directory names below are target examples; this backend currently remains at its root-level `src/` layout.
 
 ## 1. Mandatory storage rule
 

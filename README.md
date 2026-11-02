@@ -52,7 +52,7 @@ There is no npm `typecheck` script. Lint is non-fixing; build writes ignored out
 
 `postman:test` uses the official pinned Postman CLI, confirms a unique test-host marker before auth requests, disables cloud event reporting and closes/removes its own host/database in `finally`. No Postman login/API key is needed for the local file run. `postman:serve` supports optional desktop runs and stops automatically after 15 minutes. See [Postman verification](docs/Postman_Auth_Verification.md).
 
-Checks cover implemented identity, GraphQL account and device-enrollment behavior, not real browser HTTPS, native secure-storage bridges, phone recording, vision or deployment-wide no-retention. Known dependency advisories and outstanding acceptance are in the progress record.
+Backend checks cover implemented identity, GraphQL account and device-enrollment behavior. The separate [Pages Router website](../smartbord-ai-frontend-web/README.md) adds signup/login/account and [trusted-HTTPS browser verification](../smartbord-ai-frontend-web/docs/Verification.md). The test-only `scripts/browser-auth-host.ts` uses guarded disposable MongoDB and private fixture IPC; AppModule has no fixture route. Native secure-storage bridges, phone recording, vision and deployment-wide no-retention remain unverified. Known dependency advisories and outstanding acceptance are in the progress record.
 
 ## Read-only database inspection
 
