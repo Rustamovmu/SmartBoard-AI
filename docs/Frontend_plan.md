@@ -1,8 +1,8 @@
 # Frontend plan: recordings saved on the user's own device
 
-Status: revised planning specification. This replaces the earlier server-primary/PWA-download plan. The current application has not yet been rebuilt to implement it.
+Status: revised planning specification. This replaces the earlier server-primary/PWA-download plan. The separate mobile project now has an initial photo-storage foundation; the full target and physical-phone acceptance remain incomplete. See the [dated verification record](../../SmartBord-AI-frontend/docs/Verification.md).
 
-Companion: [Backend_plan.md](Backend_plan.md). Backend and frontend are separate projects; the directory names below are target examples. The user selected `/Users/a1234/Developer/SmartBord-AI-frontend` as the separate frontend/mobile repository on 2026-11-02. Selection establishes the target location, not implementation or phone-test acceptance. Its planned repository contains website and mobile build targets.
+Companion: [Backend_plan.md](Backend_plan.md). Backend and frontend are separate projects; the directory names below are target examples. The user selected `/Users/a1234/Developer/SmartBord-AI-frontend` as the separate frontend/mobile repository on 2026-11-02. Its first local commit `ab18075` implements the React/Vite/Capacitor mobile photo-storage foundation, native wrappers and SQLite/file adapters. Type/lint checks, 15 automated tests, a Chromium fallback check and Android debug build passed. The user deferred device setup; iPhone compilation needs full Xcode. F1/B3 physical save/restart/offline-reopen proof remains pending on both phones. The Next.js website, authentication UI, video, AI and exports remain planned.
 
 ## 1. Non-negotiable behavior
 

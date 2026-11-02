@@ -18,7 +18,7 @@ Follow [AGENTS.md](AGENTS.md), [backend plan](docs/Backend_plan.md) and [fronten
 - Native-session device pairing with same-account approval, owner/admin device lists and audited revocation of bound sessions, including [atomic batches of up to 20 selected devices](contracts/device-batches.md). See [enrollment](contracts/device-enrollment.md). Physical phone identity/storage and connected streams are not implemented by this API.
 - Real MongoDB integration tests using guarded disposable databases, plus a repeatable [Postman collection and verification](docs/Postman_Auth_Verification.md).
 
-Published-content operations, WebSockets, Python vision and frontend/native storage are still planned. No lecture upload/library/archive or phone-wipe API exists. No fully offline AI or physical phone storage proof is claimed.
+Published-content operations, WebSockets and Python vision remain planned here. The separate [frontend/mobile repository](../SmartBord-AI-frontend/README.md) now implements a photo-storage foundation with automated checks and an Android debug build; [physical Android/iPhone acceptance remains pending](../SmartBord-AI-frontend/docs/Verification.md). No lecture upload/library/archive or phone-wipe API exists. No fully offline AI or physical phone storage proof is claimed.
 
 ## Setup and operation
 
