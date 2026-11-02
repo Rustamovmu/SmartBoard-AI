@@ -190,3 +190,68 @@ test/helpers/connection-stub.ts
 test/http-error.e2e-spec.ts
 test/jest-integration.json
 ```
+
+## 2026-11-02 — GraphQL account administration increment
+
+Added the planned Nest Apollo GraphQL boundary at `POST /graphql`, with current-account query, bounded/filterable admin account pagination and audited role/status mutation. Public authentication stays HTTP. Current-account/transport/origin/CSRF/rate/index checks precede GraphQL work; DTOs reject unknown/null/operator inputs. Introspection, IDEs, batching, persisted queries and document caching are disabled. Requests retain the 8 KiB JSON limit, one operation, five root fields, 80 AST fields, six selection levels/definitions and safe errors without input/suggestion/stack serialization. The generated `contracts/schema.graphql` is checked against the running schema; generation opens no DB or listener.
+
+Account access changes run in a transaction: reauthenticate the actor, change only role/status, increment target auth version, revoke all target sessions and record bounded before/after audit fields. Audit failure rolls everything back. Reactivation does not restore old credentials; role changes require fresh login. DELETED is reversible soft status, not data erasure. The last active admin cannot be demoted, blocked or soft deleted. A shared `platformSettings` policy write serializes all administrator mutations and CLI bootstrap before permission/count checks, preventing snapshot write skew and stale-actor cross-block races. Explicit preparation seeds the policy once, preserves revisions and fails closed when absent. No private phone-file action or lecture persistence was added.
+
+Reference inspection: read-only TripLink member resolver, update service and GraphQL auth/roles guards. Adapted resolver/service/input/guard boundaries and request context; did not copy its roles, upload scalars, business/profile fields, pagination or self-change policy. This project's transactional last-admin invariant is implemented and tested separately. Used official Nest GraphQL/Apollo documentation linked in the [account contract](../contracts/platform-accounts.md). No Docker action or sibling repository change occurred in this increment.
+
+Pinned compatible dependencies from official npm peer/engine metadata: `@nestjs/graphql` 14.1.0, `@nestjs/apollo` 14.1.1, `@apollo/server` 5.5.1, `@as-integrations/express5` 1.1.2 and GraphQL 16.14.2. The Apollo peer range requires GraphQL 16, so the current GraphQL 17 release was not selected. Node 24, npm, CommonJS/nodenext and existing Jest configuration remain unchanged. The current audit reports 28 findings (6 low, 18 moderate, 4 high). Comparing every flagged installed package path/version with the pre-change lockfile found no changed/new flagged versions and no finding attributed to a new GraphQL package. This updates advisory evidence, not production approval; existing findings remain unresolved. No force fix, downgrade or unrelated dependency rewrite was performed.
+
+Validation on 2026-11-02: lint and non-writing TypeScript inspection passed; unit tests passed (14 suites, 77 tests); root HTTP E2E passed (2 suites, 18 tests); real disposable MongoDB integration passed (2 suites, 31 tests), including a second full run after document-limit tightening. The new integration cases prove schema equality, USER/IDOR rejection, bounds/null/operator validation, last-admin demotion/block/deletion rejection, all-session revocation/reactivation, role changes, simultaneous self-demotions/cross-blocks, missing-policy failure, idempotent preparation, audit rollback, CSRF/origin, disabled GET/batching/introspection, safe errors and rate limiting. Nest build passed. An initial compiled-module smoke command pointed at a nonexistent `dist/src/` path; correcting it to the actual `dist/app.module.js` passed without changing build layout.
+
+The expanded official Postman CLI collection passed 41 requests and 150 assertions, zero failures, exit 0. Its host creates one synthetic audited administrator only after verifying its generated database starts empty. No real administrator/account is created by tests. The wrapper closed its listener and removed the exact guarded test database; the final loopback port had no listener. Cloud reporting was disabled, no account/API key used, and no raw credential reports were saved. Desktop import/run remains unverified due to the earlier capture failure. See [Postman evidence](Postman_Auth_Verification.md).
+
+Application setup: explicit `db:prepare` succeeded for the five allowed platform collections/indexes and singleton administrator policy. It inserted no account, overwrote no existing policy and dropped nothing. The read-only `db:check` returned database up, transactions supported, 6 total collections, 1 unexpected collection and 0 unexpected nonempty collections. It correctly exited 1 for the pre-existing empty policy finding; that collection remains untouched. Temporary test hosts/connections were closed; unrelated processes were left alone. No application credentials or ignored environment files were changed.
+
+Final review: Prettier, changed Markdown link/JSON checks, manifest/lockfile agreement, preservation of the original 25 Postman request definitions, task secret/artifact scan and `git diff --check` passed. No private environment values were printed.
+
+Remaining B2: enrollment/device access, recovery flow and coordinated revocation of future connected streams. No actual administrator was bootstrapped in SmartBoardAI. Published-content operations, WebSockets, vision, native secure storage, trusted-browser HTTPS, phone persistence and deployment retention remain unimplemented/unverified. This completes the GraphQL account administration increment, not all B2 or V2 acceptance.
+
+### Exact changed files — GraphQL account administration
+
+```text
+AGENTS.md
+README.md
+contracts/authentication.md
+contracts/errors.md
+contracts/platform-accounts.md
+contracts/schema.graphql
+docs/Database_setup.md
+docs/Development_progress.md
+docs/Postman_Auth_Verification.md
+package-lock.json
+package.json
+postman/SmartBoardAI.postman_collection.json
+postman/verification-2026-11-02.json
+scripts/create-admin.ts
+scripts/generate-schema.ts
+scripts/lib/postman-host.ts
+scripts/prepare-database.ts
+src/app.module.ts
+src/app.setup.ts
+src/common/filters/http-error.filter.ts
+src/graphql/document-limits.spec.ts
+src/graphql/document-limits.ts
+src/graphql/graphql-admin.guard.ts
+src/graphql/graphql-context.ts
+src/graphql/graphql-errors.spec.ts
+src/graphql/graphql-errors.ts
+src/graphql/platform-graphql.module.ts
+src/modules/admin/admin-policy.module.ts
+src/modules/admin/admin-policy.service.ts
+src/modules/admin/admin.module.ts
+src/modules/admin/admin.resolver.ts
+src/modules/admin/admin.service.ts
+src/modules/admin/dto/account.dto.ts
+src/modules/admin/schemas/admin-policy.schema.ts
+src/modules/audit/audit.service.ts
+src/modules/audit/schemas/audit-event.schema.ts
+src/modules/auth/auth-session.service.ts
+src/modules/auth/auth.module.ts
+test/admin.integration-spec.ts
+test/auth.integration-spec.ts
+```

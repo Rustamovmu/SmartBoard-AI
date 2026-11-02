@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "SmartBoardAI — Auth v1",
+    "name": "SmartBoardAI \u2014 Auth and administrator accounts v1",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Run in order ONLY against npm run postman:serve. Supply its loopback baseUrl and testRunId. Uses a uniquely named disposable MongoDB test database. Credentials use runtime pm.variables only, never saved collection/environment variables. Contains no DB URI or real user credentials. Browser cookies are manually supplied on loopback for wire checks; actual browser HTTPS behavior remains a separate test."
   },
@@ -27,7 +27,9 @@
           "if (!pm.variables.get('fixtureEmail')) {",
           " pm.variables.set('fixtureEmail', 'postman-' + pm.variables.replaceIn('{{$guid}}') + '@example.test');",
           " pm.variables.set('fixturePassword', 'synthetic-' + pm.variables.replaceIn('{{$guid}}'));",
-          "}"
+          "}",
+          "pm.variables.set('fixtureAdminEmail', 'admin-' + run + '@example.test');",
+          "pm.variables.set('fixtureAdminPassword', 'synthetic-test-' + run);"
         ]
       }
     }
@@ -40,13 +42,8 @@
         "header": [],
         "url": {
           "raw": "{{baseUrl}}/health/live",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "health",
-            "live"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["health", "live"]
         }
       },
       "event": [
@@ -71,19 +68,14 @@
       },
       "response": [
         {
-          "name": "Documented response shape — no credentials",
+          "name": "Documented response shape \u2014 no credentials",
           "originalRequest": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/health/live",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "health",
-                "live"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["health", "live"]
             }
           },
           "status": "OK",
@@ -109,13 +101,8 @@
         "header": [],
         "url": {
           "raw": "{{baseUrl}}/health/ready",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "health",
-            "ready"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["health", "ready"]
         }
       },
       "event": [
@@ -156,13 +143,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/signup",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "signup"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "signup"]
         },
         "body": {
           "mode": "raw",
@@ -188,7 +170,8 @@
               "pm.variables.set('accessToken', result.accessToken);",
               "pm.variables.set('refreshToken', result.refreshToken);",
               "pm.test('Public signup creates USER', () => pm.expect(result.user.role).to.eql('USER'));",
-              "pm.variables.set('oldAccessToken', result.accessToken); pm.variables.set('oldRefreshToken', result.refreshToken);"
+              "pm.variables.set('oldAccessToken', result.accessToken); pm.variables.set('oldRefreshToken', result.refreshToken);",
+              "pm.variables.set('fixtureUserId', result.user.id);"
             ]
           }
         }
@@ -214,13 +197,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/me",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "me"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
         }
       },
       "event": [
@@ -257,13 +235,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/signup",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "signup"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "signup"]
         },
         "body": {
           "mode": "raw",
@@ -293,7 +266,7 @@
       },
       "response": [
         {
-          "name": "Documented response shape — no credentials",
+          "name": "Documented response shape \u2014 no credentials",
           "originalRequest": {
             "method": "POST",
             "header": [
@@ -308,13 +281,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/auth/signup",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "signup"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
             },
             "body": {
               "mode": "raw",
@@ -358,13 +326,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/signup",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "signup"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "signup"]
         },
         "body": {
           "mode": "raw",
@@ -411,13 +374,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "login"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
         },
         "body": {
           "mode": "raw",
@@ -447,7 +405,7 @@
       },
       "response": [
         {
-          "name": "Documented response shape — no credentials",
+          "name": "Documented response shape \u2014 no credentials",
           "originalRequest": {
             "method": "POST",
             "header": [
@@ -462,13 +420,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
             },
             "body": {
               "mode": "raw",
@@ -512,13 +465,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/refresh",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "refresh"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
         },
         "body": {
           "mode": "raw",
@@ -568,13 +516,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/me",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "me"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
         }
       },
       "event": [
@@ -611,13 +554,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/me",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "me"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
         }
       },
       "event": [
@@ -654,13 +592,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/refresh",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "refresh"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
         },
         "body": {
           "mode": "raw",
@@ -706,13 +639,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/me",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "me"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
         }
       },
       "event": [
@@ -749,13 +677,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "login"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
         },
         "body": {
           "mode": "raw",
@@ -805,13 +728,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/logout",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "logout"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "logout"]
         },
         "body": {
           "mode": "raw",
@@ -857,13 +775,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/me",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "me"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
         }
       },
       "event": [
@@ -900,13 +813,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/csrf",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "csrf"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "csrf"]
         }
       },
       "event": [
@@ -948,13 +856,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "login"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
         },
         "body": {
           "mode": "raw",
@@ -984,7 +887,7 @@
       },
       "response": [
         {
-          "name": "Documented response shape — no credentials",
+          "name": "Documented response shape \u2014 no credentials",
           "originalRequest": {
             "method": "POST",
             "header": [
@@ -1003,13 +906,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
             },
             "body": {
               "mode": "raw",
@@ -1065,13 +963,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "login"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
         },
         "body": {
           "mode": "raw",
@@ -1140,13 +1033,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/me",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "me"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
         }
       },
       "event": [
@@ -1195,13 +1083,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/refresh",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "refresh"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
         },
         "body": {
           "mode": "raw",
@@ -1259,13 +1142,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/refresh",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "refresh"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
         },
         "body": {
           "mode": "raw",
@@ -1338,13 +1216,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/logout",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "logout"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "logout"]
         },
         "body": {
           "mode": "raw",
@@ -1398,13 +1271,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/me",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "me"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "me"]
         }
       },
       "event": [
@@ -1445,13 +1313,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "login"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
         },
         "body": {
           "mode": "raw",
@@ -1493,13 +1356,8 @@
         ],
         "url": {
           "raw": "{{baseUrl}}/uploads/videos",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "uploads",
-            "videos"
-          ]
+          "host": ["{{baseUrl}}"],
+          "path": ["uploads", "videos"]
         },
         "body": {
           "mode": "raw",
@@ -1529,7 +1387,7 @@
       },
       "response": [
         {
-          "name": "Documented response shape — no credentials",
+          "name": "Documented response shape \u2014 no credentials",
           "originalRequest": {
             "method": "POST",
             "header": [
@@ -1540,13 +1398,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/uploads/videos",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "uploads",
-                "videos"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["uploads", "videos"]
             },
             "body": {
               "mode": "raw",
@@ -1573,6 +1426,830 @@
           "body": "{\n  \"statusCode\": 404,\n  \"code\": \"NOT_FOUND\",\n  \"message\": \"Route not found.\"\n}"
         }
       ]
+    },
+    {
+      "name": "26 Native login for GraphQL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.variables.set('accessToken', pm.response.json().accessToken);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "27 Current GraphQL account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query { currentAccount { id email role status } }\",\n  \"variables\": {}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Own account only', () => pm.expect(pm.response.json().data.currentAccount.id).to.eql(pm.variables.get('fixtureUserId')));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "28 USER cannot list accounts",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query($input: AccountsInput!) { adminAccounts(input: $input) { items { id role status } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {}\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe FORBIDDEN error', () => pm.expect(pm.response.json().errors[0]).to.deep.eql({message: 'Access denied.', extensions: {code: 'FORBIDDEN'}}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "29 Login synthetic disposable administrator",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureAdminEmail}}\",\n  \"password\": \"{{fixtureAdminPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const result = pm.response.json(); pm.variables.set('adminAccessToken', result.accessToken); pm.variables.set('fixtureAdminId', result.user.id);",
+              "pm.test('Explicit fixture ADMIN', () => pm.expect(result.user.role).to.eql('ADMIN'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "30 Administrator account pagination",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query($input: AccountsInput!) { adminAccounts(input: $input) { items { id role status } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {\n      \"page\": 1,\n      \"pageSize\": 1\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const page = pm.response.json().data.adminAccounts;",
+              "pm.test('Pagination contract', () => pm.expect(page).to.include({page:1,pageSize:1}));",
+              "pm.test('Bounded page', () => pm.expect(page.items).to.have.length(1));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "31 Block account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: UpdateAccountAccessInput!) { adminUpdateAccountAccess(input: $input) { id role status } }\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"{{fixtureUserId}}\",\n      \"status\": \"BLOCKED\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Account blocked', () => pm.expect(pm.response.json().data.adminUpdateAccountAccess.status).to.eql('BLOCKED'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "32 Blocked credentials revoked",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query { currentAccount { id email role status } }\",\n  \"variables\": {}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe UNAUTHENTICATED error', () => pm.expect(pm.response.json().errors[0]).to.deep.eql({message: 'Authentication required.', extensions: {code: 'UNAUTHENTICATED'}}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "33 Reactivate account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: UpdateAccountAccessInput!) { adminUpdateAccountAccess(input: $input) { id role status } }\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"{{fixtureUserId}}\",\n      \"status\": \"ACTIVE\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Account active', () => pm.expect(pm.response.json().data.adminUpdateAccountAccess.status).to.eql('ACTIVE'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "34 Reactivation does not restore old credentials",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query { currentAccount { id email role status } }\",\n  \"variables\": {}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe UNAUTHENTICATED error', () => pm.expect(pm.response.json().errors[0]).to.deep.eql({message: 'Authentication required.', extensions: {code: 'UNAUTHENTICATED'}}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "35 Protect last active administrator",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: UpdateAccountAccessInput!) { adminUpdateAccountAccess(input: $input) { id role status } }\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"{{fixtureAdminId}}\",\n      \"role\": \"USER\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe CONFLICT error', () => pm.expect(pm.response.json().errors[0]).to.deep.eql({message: 'Account change conflicts with platform policy.', extensions: {code: 'CONFLICT'}}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "36 Promote account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: UpdateAccountAccessInput!) { adminUpdateAccountAccess(input: $input) { id role status } }\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"{{fixtureUserId}}\",\n      \"role\": \"ADMIN\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Account promoted', () => pm.expect(pm.response.json().data.adminUpdateAccountAccess.role).to.eql('ADMIN'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "37 Promoted account logs in again",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{fixtureEmail}}\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const result = pm.response.json(); pm.variables.set('accessToken', result.accessToken);",
+              "pm.test('Current ADMIN role', () => pm.expect(result.user.role).to.eql('ADMIN'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "38 Demote account",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: UpdateAccountAccessInput!) { adminUpdateAccountAccess(input: $input) { id role status } }\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"{{fixtureUserId}}\",\n      \"role\": \"USER\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Account demoted', () => pm.expect(pm.response.json().data.adminUpdateAccountAccess.role).to.eql('USER'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "39 Demoted credentials revoked",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query($input: AccountsInput!) { adminAccounts(input: $input) { items { id role status } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {}\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe UNAUTHENTICATED error', () => pm.expect(pm.response.json().errors[0]).to.deep.eql({message: 'Authentication required.', extensions: {code: 'UNAUTHENTICATED'}}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "40 Reject private input field",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: UpdateAccountAccessInput!) { adminUpdateAccountAccess(input: $input) { id role status } }\",\n  \"variables\": {\n    \"input\": {\n      \"id\": \"{{fixtureUserId}}\",\n      \"lectureTitle\": \"synthetic-private-marker\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe VALIDATION_ERROR error', () => pm.expect(pm.response.json().errors[0]).to.deep.eql({message: 'Invalid request.', extensions: {code: 'VALIDATION_ERROR'}}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "41 Reject introspection",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query { __schema { types { name } } }\",\n  \"variables\": {}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe VALIDATION_ERROR error', () => pm.expect(pm.response.json().errors[0]).to.deep.eql({message: 'Invalid request.', extensions: {code: 'VALIDATION_ERROR'}}));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
     }
   ]
 }

@@ -8,6 +8,10 @@ import type { Request, Response, NextFunction } from 'express';
 import { AppModule } from '../../src/app.module';
 import { configureApplication } from '../../src/app.setup';
 import { AuthSchemaService } from '../../src/modules/auth/auth-schema.service';
+import { AuditService } from '../../src/modules/audit/audit.service';
+import { AdminPolicyService } from '../../src/modules/admin/admin-policy.service';
+import { MembersService } from '../../src/modules/members/members.service';
+import { PasswordService } from '../../src/modules/auth/password.service';
 import {
   assertInitiallyEmpty,
   configureDisposableDatabase,
@@ -51,7 +55,27 @@ export async function createPostmanTestHost() {
     await assertInitiallyEmpty(connection, name);
     owned = true;
     await app.get(AuthSchemaService).prepare();
+    await app.get(AuditService).prepare();
+    await app.get(AdminPolicyService).prepare();
     const testRunId = name.slice('sbt_'.length);
+    // Synthetic fixture only, after proving this exact disposable DB was empty.
+    // Collection scripts derive these credentials in runtime variables; no real admin.
+    const passwordHash = await app
+      .get(PasswordService)
+      .hash(`synthetic-test-${testRunId}`);
+    await connection.transaction(async (session) => {
+      await app.get(AdminPolicyService).acquire(session);
+      const admin = await app.get(MembersService).create(
+        {
+          email: `admin-${testRunId}@example.test`,
+          name: 'Synthetic Postman Administrator',
+          passwordHash,
+        },
+        'ADMIN',
+        session,
+      );
+      await app.get(AuditService).administratorBootstrapped(admin._id, session);
+    });
     app.use((_request: Request, response: Response, next: NextFunction) => {
       response.setHeader('X-SmartBord-Test-Run', testRunId);
       next();

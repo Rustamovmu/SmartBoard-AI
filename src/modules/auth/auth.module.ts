@@ -52,6 +52,7 @@ import { AuthSchemaService } from './auth-schema.service';
     AuthSchemaService,
     AuthConfig,
     PasswordService,
+    AuthRateLimitService,
     CurrentAccountGuard,
     AdminGuard,
     MongooseModule,

@@ -13,6 +13,7 @@ import { AUTH_POLICY } from '../src/contracts/auth-v1';
 import { AuthSchemaService } from '../src/modules/auth/auth-schema.service';
 import { AuthModule } from '../src/modules/auth/auth.module';
 import { AuditService } from '../src/modules/audit/audit.service';
+import { AdminPolicyService } from '../src/modules/admin/admin-policy.service';
 import { parseDatabaseEnvironment } from '../src/config/database-environment';
 import { openPlatformConnection } from '../src/database/platform-connection';
 import { AuthSessionService } from '../src/modules/auth/auth-session.service';
@@ -95,6 +96,7 @@ describe('authentication with isolated real MongoDB', () => {
     });
     await app.get(AuthSchemaService).prepare();
     await app.get(AuditService).prepare();
+    await app.get(AdminPolicyService).prepare();
     users = app.get<Model<Member>>(getModelToken(MEMBER_MODEL));
     sessions = app.get<Model<AuthSession>>(getModelToken(AUTH_SESSION_MODEL));
     attempts = app.get<Model<AuthAttempt>>(getModelToken(AUTH_ATTEMPT_MODEL));
@@ -519,6 +521,12 @@ describe('authentication with isolated real MongoDB', () => {
       .toArray();
     expect(
       collections.map(({ name: collection }) => collection).sort(),
-    ).toEqual(['auditEvents', 'authAttempts', 'authSessions', 'users']);
+    ).toEqual([
+      'auditEvents',
+      'authAttempts',
+      'authSessions',
+      'platformSettings',
+      'users',
+    ]);
   });
 });

@@ -1,0 +1,48 @@
+type Account {
+  createdAt: String!
+  email: String!
+  id: ID!
+  name: String!
+  role: AccountRole!
+  status: AccountState!
+}
+
+type AccountPage {
+  items: [Account!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+enum AccountRole {
+  ADMIN
+  USER
+}
+
+enum AccountState {
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+input AccountsInput {
+  page: Int! = 1
+  pageSize: Int! = 20
+  role: AccountRole
+  status: AccountState
+}
+
+type Mutation {
+  adminUpdateAccountAccess(input: UpdateAccountAccessInput!): Account!
+}
+
+type Query {
+  adminAccounts(input: AccountsInput!): AccountPage!
+  currentAccount: Account!
+}
+
+input UpdateAccountAccessInput {
+  id: ID!
+  role: AccountRole
+  status: AccountState
+}

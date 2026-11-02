@@ -8,6 +8,8 @@ import { HealthModule } from './modules/health/health.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { PlatformGraphqlModule } from './graphql/platform-graphql.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { AuditModule } from './modules/audit/audit.module';
     HealthModule,
     AuthModule,
     AuditModule,
+    AdminModule,
+    PlatformGraphqlModule,
   ],
   controllers: [AppController],
   providers: [

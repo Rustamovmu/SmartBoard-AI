@@ -10,10 +10,24 @@ export const AUDIT_MODEL = 'PlatformAuditEvent';
 export class AuditEvent {
   @Prop({ type: String, required: true })
   _id: string;
-  @Prop({ type: String, enum: ['ADMIN_BOOTSTRAPPED'], required: true })
+  @Prop({
+    type: String,
+    enum: ['ADMIN_BOOTSTRAPPED', 'ACCOUNT_ACCESS_CHANGED'],
+    required: true,
+  })
   action: string;
-  @Prop({ type: String, enum: ['LOCAL_COMMAND'], required: true })
+  @Prop({ type: String, enum: ['LOCAL_COMMAND', 'ADMIN'], required: true })
   actorType: string;
+  @Prop({ type: String })
+  actorUserId?: string;
+  @Prop({ type: String, enum: ['USER', 'ADMIN'] })
+  previousRole?: string;
+  @Prop({ type: String, enum: ['USER', 'ADMIN'] })
+  nextRole?: string;
+  @Prop({ type: String, enum: ['ACTIVE', 'BLOCKED', 'DELETED'] })
+  previousStatus?: string;
+  @Prop({ type: String, enum: ['ACTIVE', 'BLOCKED', 'DELETED'] })
+  nextStatus?: string;
   @Prop({ required: true })
   subjectUserId: string;
   @Prop({ required: true })

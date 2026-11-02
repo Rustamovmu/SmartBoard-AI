@@ -90,11 +90,16 @@ export class AuthSessionService {
     return user;
   }
 
-  async authenticate(raw: string, transport: AuthTransport) {
+  async authenticate(
+    raw: string,
+    transport: AuthTransport,
+    transaction?: ClientSession,
+  ) {
     const { id } = this.tokens.parseAccess(raw);
     const record = await this.sessions
       .findById(id)
       .select(secretFields)
+      .session(transaction ?? null)
       .lean()
       .exec();
     if (
@@ -107,7 +112,7 @@ export class AuthSessionService {
     ) {
       throw new UnauthorizedException();
     }
-    const user = await this.currentUser(record);
+    const user = await this.currentUser(record, transaction);
     if (!user) throw new ForbiddenException();
     return { user, sessionId: id };
   }

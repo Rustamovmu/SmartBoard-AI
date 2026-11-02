@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import type { HttpErrorResponse } from '../../contracts/platform-v1';
+import { safeGraphqlError } from '../../graphql/graphql-errors';
 
 const ERRORS: Record<number, Omit<HttpErrorResponse, 'statusCode'>> = {
   400: { code: 'VALIDATION_ERROR', message: 'Invalid request.' },
@@ -30,8 +31,9 @@ const ERRORS: Record<number, Omit<HttpErrorResponse, 'statusCode'>> = {
 export class HttpErrorFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpErrorFilter.name);
 
-  catch(exception: unknown, host: ArgumentsHost): void {
-    // GraphQL and WebSocket transports need their own error adapters later.
+  catch(exception: unknown, host: ArgumentsHost): unknown {
+    if (host.getType<string>() === 'graphql')
+      return safeGraphqlError(exception);
     if (host.getType() !== 'http') throw exception;
 
     const parserStatus =

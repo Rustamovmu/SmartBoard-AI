@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { AuthSchemaService } from '../src/modules/auth/auth-schema.service';
 import { AuditService } from '../src/modules/audit/audit.service';
+import { AdminPolicyService } from '../src/modules/admin/admin-policy.service';
 
 async function main() {
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -12,8 +13,9 @@ async function main() {
   try {
     await app.get(AuthSchemaService).prepare();
     await app.get(AuditService).prepare();
+    await app.get(AdminPolicyService).prepare();
     console.log(
-      'Platform authentication collections and indexes are prepared. No records were created or indexes dropped.',
+      'Platform collections, indexes and administrator policy are prepared. No accounts were created or indexes dropped.',
     );
   } finally {
     await app.close();

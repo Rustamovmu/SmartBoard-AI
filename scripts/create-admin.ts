@@ -8,6 +8,7 @@ import { MembersService } from '../src/modules/members/members.service';
 import { PasswordService } from '../src/modules/auth/password.service';
 import { AuthSchemaService } from '../src/modules/auth/auth-schema.service';
 import { AuditService } from '../src/modules/audit/audit.service';
+import { AdminPolicyService } from '../src/modules/admin/admin-policy.service';
 
 async function main() {
   const email = process.env.ADMIN_BOOTSTRAP_EMAIL?.trim().toLowerCase();
@@ -36,6 +37,7 @@ async function main() {
     await app
       .get<Connection>(getConnectionToken())
       .transaction(async (session) => {
+        await app.get(AdminPolicyService).acquire(session);
         const user = await app
           .get(MembersService)
           .create({ email, name, passwordHash }, 'ADMIN', session);
