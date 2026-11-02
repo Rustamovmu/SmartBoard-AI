@@ -1,0 +1,32 @@
+{
+  "date": "2026-11-02",
+  "timezone": "Asia/Seoul",
+  "runner": "Official Postman CLI",
+  "runnerVersion": "1.76.0",
+  "command": "npm run postman:test",
+  "requests": 70,
+  "assertions": 269,
+  "failedRequests": 0,
+  "failedAssertions": 0,
+  "exitCode": 0,
+  "fixture": "Generated verified-empty sbt_<32 hex digits> database via MONGODB_TEST_URI",
+  "scope": [
+    "prior auth/account/enrollment collection unchanged",
+    "reject whole selection containing a missing ID without partial revocation",
+    "duplicate-ID validation and USER rejection on administrator batch",
+    "owner bulk revocation with input ordering and complete selection counts",
+    "batch-revoked access/refresh rejection",
+    "administrator no-op repeat preserves committed timestamps",
+    "administrator batch rejects a missing ID",
+    "GraphQL HTTP request arrays remain disabled"
+  ],
+  "loopbackOnly": true,
+  "cloudEventReporting": false,
+  "disposableDatabaseRemoved": true,
+  "temporaryHostClosed": true,
+  "applicationDatabaseChanged": false,
+  "graphqlHttpBatchingEnabled": false,
+  "desktopImportAndRunVerified": false,
+  "realBrowserHttpsVerified": false,
+  "nativeDeviceStorageVerified": false
+}

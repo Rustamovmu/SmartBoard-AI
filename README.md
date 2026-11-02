@@ -14,7 +14,7 @@ Follow [AGENTS.md](AGENTS.md), [backend plan](docs/Backend_plan.md) and [fronten
 - Current account/session/status checks and an administrator guard. Public signup creates USER only.
 - Explicit local schema setup and administrator bootstrap with a transactional audit record.
 - Authenticated GraphQL current account and admin account pagination/access changes, transactional audit/session revocation and concurrent last-admin protection. See [account operations](contracts/platform-accounts.md) and [schema](contracts/schema.graphql).
-- Native-session device pairing with same-account approval, owner/admin device lists and audited revocation of bound sessions. See [enrollment](contracts/device-enrollment.md). Physical phone identity/storage and connected streams are not implemented by this API.
+- Native-session device pairing with same-account approval, owner/admin device lists and audited revocation of bound sessions, including [atomic batches of up to 20 selected devices](contracts/device-batches.md). See [enrollment](contracts/device-enrollment.md). Physical phone identity/storage and connected streams are not implemented by this API.
 - Real MongoDB integration tests using guarded disposable databases, plus a repeatable [Postman collection and verification](docs/Postman_Auth_Verification.md).
 
 Account recovery, published-content operations, WebSockets, Python vision and frontend/native storage are still planned. No lecture upload/library/archive or phone-wipe API exists. No fully offline AI or physical phone storage proof is claimed.

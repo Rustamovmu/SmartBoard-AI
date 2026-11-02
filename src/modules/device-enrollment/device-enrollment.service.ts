@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -65,6 +66,7 @@ export class DeviceEnrollmentService {
     scope: string,
     maximum: number,
     work: (actor: Actor, session: ClientSession) => Promise<T>,
+    cost = 1,
   ) {
     await this.schema.assertPrepared();
     const account = await this.authentication.authenticate(
@@ -72,7 +74,7 @@ export class DeviceEnrollmentService {
       transport,
     );
     // Outside the transaction: failed approvals still consume their rate budget.
-    await this.limits.consume(scope, account.user._id, maximum);
+    await this.limits.consume(scope, account.user._id, maximum, cost);
     return this.connection.transaction(async (session) => {
       // Shares ordering with account blocking/role changes and admin bootstrap.
       await this.policy.acquire(session);
@@ -232,12 +234,34 @@ export class DeviceEnrollmentService {
     return device ? this.publicDevice(device) : null;
   }
 
-  revoke(
+  async revoke(
     id: string,
     credential: string,
     transport: AuthTransport,
     administrator = false,
   ) {
+    const result = await this.revokeMany(
+      [id],
+      credential,
+      transport,
+      administrator,
+    );
+    return result.items[0];
+  }
+
+  revokeMany(
+    ids: string[],
+    credential: string,
+    transport: AuthTransport,
+    administrator = false,
+  ) {
+    if (
+      !Array.isArray(ids) ||
+      ids.length < 1 ||
+      ids.length > 20 ||
+      new Set(ids).size !== ids.length
+    )
+      throw new BadRequestException();
     return this.mutate(
       credential,
       transport,
@@ -246,41 +270,59 @@ export class DeviceEnrollmentService {
       async (actor, session) => {
         if (administrator && actor.user.role !== 'ADMIN')
           throw new ForbiddenException();
-        const device = await this.devices
-          .findOne({
-            _id: id,
+        const devices = await this.devices
+          .find({
+            _id: { $in: ids },
             ...(administrator ? {} : { userId: actor.user._id }),
           })
           .session(session)
           .lean()
           .exec();
-        if (!device) throw new NotFoundException();
-        if (device.status === 'REVOKED') return this.publicDevice(device);
+        // Validate the entire selection before writes. Missing and foreign IDs
+        // share one rejection, without revealing per-ID existence/ownership.
+        if (devices.length !== ids.length) throw new NotFoundException();
+        const active = devices.filter((device) => device.status === 'ACTIVE');
+        const activeIds = active.map((device) => device._id);
         const revokedAt = new Date();
-        await this.devices.updateOne(
-          { _id: id },
-          { $set: { status: 'REVOKED', revokedAt } },
-          { session },
-        );
-        await this.sessions.updateMany(
-          { deviceId: id, revokedAt: null },
-          { $set: { revokedAt } },
-          { session },
-        );
-        await this.audit.deviceChanged(
-          'DEVICE_REVOKED',
-          actor.user._id,
-          actor.user.role,
-          device.userId,
-          id,
-          session,
-        );
+        if (activeIds.length) {
+          await this.devices.updateMany(
+            { _id: { $in: activeIds } },
+            { $set: { status: 'REVOKED', revokedAt } },
+            { session },
+          );
+          await this.sessions.updateMany(
+            { deviceId: { $in: activeIds }, revokedAt: null },
+            { $set: { revokedAt } },
+            { session },
+          );
+          // Sequential operations are required on one MongoDB transaction session.
+          for (const device of active)
+            await this.audit.deviceChanged(
+              'DEVICE_REVOKED',
+              actor.user._id,
+              actor.user.role,
+              device.userId,
+              device._id,
+              session,
+            );
+        }
+        const byId = new Map(devices.map((device) => [device._id, device]));
         return {
-          ...this.publicDevice(device),
-          status: 'REVOKED',
-          revokedAt: revokedAt.toISOString(),
+          items: ids.map((id) => {
+            const device = byId.get(id)!;
+            return {
+              ...this.publicDevice(device),
+              status: 'REVOKED',
+              revokedAt:
+                device.revokedAt?.toISOString() ?? revokedAt.toISOString(),
+            };
+          }),
+          page: 1,
+          pageSize: ids.length,
+          total: ids.length,
         };
       },
+      ids.length,
     );
   }
 }

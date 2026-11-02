@@ -313,3 +313,38 @@ src/modules/device-enrollment/schemas/device.schema.ts
 src/modules/device-enrollment/schemas/pairing-request.schema.ts
 test/device-enrollment.integration-spec.ts
 ```
+
+## 2026-11-02 — Atomic selected-device batch API
+
+Added `revokeDevices` and `adminRevokeDevices` at `POST /graphql` with a validated `RevokeDevicesInput`: 1–20 distinct opaque device UUIDs. Owner selections require every device to belong to the caller; current ADMIN selections can span accounts. Both return one complete `DevicePage` in submitted order (`page: 1`, `pageSize`/`total` equal selection size). See [exact operations/Variables and limits](../contracts/device-batches.md). Generic GraphQL HTTP batching remains disabled. No batch account mutation, frame upload/analysis or background job was introduced.
+
+One transaction acquires the existing administrator policy write, reauthenticates the actor, validates the complete permitted selection, updates newly revoked devices and their bound sessions, and appends one audit per changed device. Missing/foreign IDs cause the same generic whole-batch rejection. Later audit failure rolls back all prior device/session/audit writes. Already-revoked devices retain their original timestamp without another event. Single-device endpoints share this implementation and preserve their response shape. Overlapping batches and account role/status changes use the same policy ordering; self-revocation invalidates the caller only after the successful action. Phone files remain outside backend authority.
+
+Extended the existing MongoDB limiter with an atomic positive-integer cost, defaulting to 1 for existing callers. All single/bulk owner/admin revocations share 20 submitted IDs per actor account per epoch minute, including no-op/failed business attempts. A selection that cannot fit is rejected without reserving additional cost or performing revocation. This prevents a 20-device request from bypassing the prior per-device work budget. Other authentication and GraphQL limits remain unchanged. No dependency, collection, index or application setup change is required beyond the existing enrollment prerequisites.
+
+Read-only reference inspection: TripLink auth-session `revokeAll`/auth-records transaction serialization and Nestar auth boundaries. They provide no atomic batch of selected enrolled devices, so the implementation uses this project's ownership, transaction and audit policies rather than copying reference wire shapes or business fields. Sibling repositories and environment files were unchanged.
+
+Validation: non-fixing lint, non-writing TypeScript inspection, schema generation, Nest build and compiled `AppModule` import passed. Unit tests passed (14 suites, 77 tests); HTTP E2E passed (2 suites, 18 tests). The initial real integration run passed 55/56 tests, including all ten new batch cases, but an older rate-limit test crossed its minute window and failed a timing-dependent expectation. That fixture now verifies a failed attempt increments persistent budget and seeds bounded adjacent-bucket counters in its guarded disposable database; production minute windows/limits are unchanged. The corrected full integration rerun passed (3 suites, 56 tests). Ten new cases prove owner/admin selection scope, whole-batch missing/foreign rejection, validation, the 20-device boundary, weighted shared quotas, second-audit rollback, overlap timestamp/audit preservation, concurrent admin demotion and self-revocation; the existing browser case now also proves batch CSRF/origin enforcement.
+
+Official Postman CLI passed 70 requests/269 assertions, zero failures and exit 0, preserving all prior 57 request definitions and adding 13 batch scenarios. Its exact disposable database was removed and loopback host closed. No application records, real accounts/devices or private lecture content were used as fixtures. Temporary integration apps own and close their connections/listeners and identity-guard their generated database cleanup. Application `db:prepare`/`db:check`, administrator bootstrap and deployment were not run. Existing recovery/native/vision/WebSocket and production-retention/dependency limitations remain outside this increment.
+
+Final review: all 14 task files were reviewed, including untracked contract/evidence files; all 54 local Markdown links resolve; task TypeScript/JSON and enrollment/batch contracts pass Prettier; JSON, secret/artifact scan and `git diff --check` pass. The prior 57 Postman definitions are unchanged. No new dependency/lockfile, generated build artifact, credential or private lecture file is included.
+
+### Exact changed files — selected-device batches
+
+```text
+AGENTS.md
+README.md
+contracts/device-batches.md
+contracts/device-enrollment.md
+contracts/schema.graphql
+docs/Development_progress.md
+docs/Postman_Auth_Verification.md
+postman/SmartBoardAI.postman_collection.json
+postman/verification-2026-11-02-device-batches.json
+src/modules/auth/auth-rate-limit.service.ts
+src/modules/device-enrollment/device-enrollment.resolver.ts
+src/modules/device-enrollment/device-enrollment.service.ts
+src/modules/device-enrollment/dto/device.dto.ts
+test/device-enrollment.integration-spec.ts
+```

@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 import { AUTH_ATTEMPT_MODEL, AuthAttempt } from './schemas/auth-attempt.schema';
@@ -11,15 +11,17 @@ export class AuthRateLimitService {
     private readonly attempts: Model<AuthAttempt>,
   ) {}
 
-  async consume(scope: string, identity: string, maximum: number) {
+  async consume(scope: string, identity: string, maximum: number, cost = 1) {
+    if (!Number.isInteger(cost) || cost < 1 || cost > maximum)
+      throw new BadRequestException();
     const bucket = Math.floor(Date.now() / 60_000);
     const id = digest(`${scope}:${identity}:${bucket}`);
     try {
       await this.attempts
         .findOneAndUpdate(
-          { _id: id, count: { $lt: maximum } },
+          { _id: id, count: { $lte: maximum - cost } },
           {
-            $inc: { count: 1 },
+            $inc: { count: cost },
             $setOnInsert: { expiresAt: new Date((bucket + 1) * 60_000) },
           },
           { upsert: true, runValidators: true },

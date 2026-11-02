@@ -32,6 +32,8 @@ const adminQuery = `query($input: AdminDevicesInput!) { adminDevices(input: $inp
 const currentQuery = `query { currentDevice { ${fields} } }`;
 const revokeQuery = `mutation($input: RevokeDeviceInput!) { revokeDevice(input: $input) { ${fields} } }`;
 const adminRevokeQuery = `mutation($input: RevokeDeviceInput!) { adminRevokeDevice(input: $input) { ${fields} } }`;
+const revokeBatchQuery = `mutation($input: RevokeDevicesInput!) { revokeDevices(input: $input) { items { ${fields} } page pageSize total } }`;
+const adminRevokeBatchQuery = `mutation($input: RevokeDevicesInput!) { adminRevokeDevices(input: $input) { items { ${fields} } page pageSize total } }`;
 
 describe('device enrollment with guarded disposable MongoDB', () => {
   let app: NestExpressApplication;
@@ -97,6 +99,11 @@ describe('device enrollment with guarded disposable MongoDB', () => {
         status: string;
       },
     };
+  };
+  const enrollAnother = async (owner: Awaited<ReturnType<typeof fixture>>) => {
+    const target = (await login(owner.email).expect(200))
+      .body as typeof owner.target;
+    return { target, ...(await enroll({ ...owner, target })) };
   };
 
   beforeAll(async () => {
@@ -577,18 +584,57 @@ describe('device enrollment with guarded disposable MongoDB', () => {
 
   it('enforces persistent account rate limits even on failed approvals', async () => {
     const owner = await fixture();
-    for (let i = 0; i < 10; i++)
-      expect(
-        error(await confirm(owner.approver.accessToken, 'x'.repeat(43))),
-      ).toBe('NOT_FOUND');
+    const before = Math.floor(Date.now() / 60000);
+    assertExactTestDatabase(connection, name);
+    const counterIds = [before, before + 1].map((bucket) =>
+      digest(`enrollment:confirm:${owner.id}:${bucket}`),
+    );
+    for (const id of counterIds)
+      await connection
+        .db!.collection('authAttempts')
+        .updateOne(
+          { _id: id as never },
+          { $set: { count: 0, expiresAt: new Date(Date.now() + 180000) } },
+          { upsert: true },
+        );
+    expect(
+      error(await confirm(owner.approver.accessToken, 'x'.repeat(43))),
+    ).toBe('NOT_FOUND');
+    const counters = await connection
+      .db!.collection('authAttempts')
+      .find({
+        _id: { $in: counterIds as never },
+      })
+      .toArray();
+    expect(
+      counters.reduce((total, counter) => total + Number(counter.count), 0),
+    ).toBe(1);
+    // Saturate adjacent buckets so the assertions are independent of a minute
+    // rollover. Only these guarded disposable fixtures receive seeded counters.
+    assertExactTestDatabase(connection, name);
+    const saturate = async (scope: string, maximum: number) => {
+      const bucket = Math.floor(Date.now() / 60000);
+      for (const minute of [bucket, bucket + 1])
+        await connection.db!.collection('authAttempts').updateOne(
+          { _id: digest(`${scope}:${owner.id}:${minute}`) as never },
+          {
+            $set: {
+              count: maximum,
+              expiresAt: new Date(Date.now() + 180000),
+            },
+          },
+          { upsert: true },
+        );
+    };
+    await saturate('enrollment:confirm', 10);
     expect(
       error(await confirm(owner.approver.accessToken, 'x'.repeat(43))),
     ).toBe('RATE_LIMITED');
-    for (let i = 0; i < 5; i++)
-      expect(
-        (await start(owner.target.accessToken)).body.data.createDevicePairing
-          .code,
-      ).toBeTruthy();
+    expect(
+      (await start(owner.target.accessToken)).body.data.createDevicePairing
+        .code,
+    ).toBeTruthy();
+    await saturate('enrollment:create', 5);
     expect(error(await start(owner.target.accessToken))).toBe('RATE_LIMITED');
   });
 
@@ -683,5 +729,435 @@ describe('device enrollment with guarded disposable MongoDB', () => {
       .send(body)
       .expect(200);
     expect(approved.body.data.confirmDevicePairing.userId).toBe(owner.id);
+    const revokeBody = {
+      query: revokeBatchQuery,
+      variables: {
+        input: { ids: [approved.body.data.confirmDevicePairing.id] },
+      },
+    };
+    expect(error(await browserGql().send(revokeBody).expect(403))).toBe(
+      'FORBIDDEN',
+    );
+    expect(
+      error(
+        await browserGql()
+          .set('Origin', 'https://malicious.invalid')
+          .set('X-CSRF-Token', csrf.body.csrfToken)
+          .send(revokeBody)
+          .expect(403),
+      ),
+    ).toBe('FORBIDDEN');
+    const revoked = await browserGql()
+      .set('X-CSRF-Token', csrf.body.csrfToken)
+      .send(revokeBody)
+      .expect(200);
+    expect(revoked.body.data.revokeDevices.items[0].status).toBe('REVOKED');
+  });
+
+  describe('atomic batches of selected device revocations', () => {
+    it('revokes two owned devices in input order and preserves timestamps/audits on repeat', async () => {
+      const owner = await fixture();
+      const first = await enroll(owner);
+      const second = await enrollAnother(owner);
+      const ids = [second.device.id, first.device.id];
+      const result = await gql(owner.approver.accessToken, revokeBatchQuery, {
+        ids,
+      })
+        .expect(200)
+        .expect('Cache-Control', 'no-store');
+      expect(result.body.errors).toBeUndefined();
+      const page = result.body.data.revokeDevices;
+      expect(page).toMatchObject({ page: 1, pageSize: 2, total: 2 });
+      expect(page.items.map((d: { id: string }) => d.id)).toEqual(ids);
+      expect(
+        page.items.every((d: { status: string }) => d.status === 'REVOKED'),
+      ).toBe(true);
+      expect(page.items[0].revokedAt).toBe(page.items[1].revokedAt);
+      for (const target of [owner.target, second.target]) {
+        await gql(target.accessToken, currentQuery).expect(401);
+        await refresh(target.refreshToken).expect(401);
+      }
+      expect(
+        (await gql(owner.approver.accessToken, currentQuery)).body.data
+          .currentDevice,
+      ).toBeNull();
+      expect(
+        (await gql(owner.approver.accessToken, revokeBatchQuery, { ids })).body
+          .data.revokeDevices,
+      ).toEqual(page);
+      const events = await connection
+        .db!.collection('auditEvents')
+        .find({ action: 'DEVICE_REVOKED' })
+        .toArray();
+      expect(events).toHaveLength(2);
+      expect(new Set(events.map((e) => e.subjectDeviceId))).toEqual(
+        new Set(ids),
+      );
+      expect(JSON.stringify(events)).not.toMatch(
+        /Synthetic Phone|codeHash|Token|label|password/,
+      );
+    });
+
+    it('requires ADMIN for a cross-account batch and audits each actual owner', async () => {
+      const firstOwner = await fixture();
+      const secondOwner = await fixture();
+      const admin = await fixture('ADMIN');
+      const first = await enroll(firstOwner);
+      const second = await enroll(secondOwner);
+      const ids = [first.device.id, second.device.id];
+      expect(
+        error(
+          await gql(firstOwner.approver.accessToken, adminRevokeBatchQuery, {
+            ids,
+          }),
+        ),
+      ).toBe('FORBIDDEN');
+      const result = await gql(
+        admin.approver.accessToken,
+        adminRevokeBatchQuery,
+        { ids },
+      );
+      expect(
+        result.body.data.adminRevokeDevices.items.map(
+          (d: { userId: string }) => d.userId,
+        ),
+      ).toEqual([firstOwner.id, secondOwner.id]);
+      const events = await connection
+        .db!.collection('auditEvents')
+        .find({ action: 'DEVICE_REVOKED' })
+        .toArray();
+      expect(events).toHaveLength(2);
+      for (const event of events)
+        expect(event).toMatchObject({
+          actorType: 'ADMIN',
+          actorUserId: admin.id,
+        });
+      expect(new Set(events.map((e) => e.subjectUserId))).toEqual(
+        new Set([firstOwner.id, secondOwner.id]),
+      );
+      await refresh(firstOwner.target.refreshToken).expect(401);
+      await refresh(secondOwner.target.refreshToken).expect(401);
+    });
+
+    it('rejects a whole selection containing a missing or foreign device without ID disclosure or partial changes', async () => {
+      const owner = await fixture();
+      const foreign = await fixture();
+      const ownDevice = await enroll(owner);
+      const foreignDevice = await enroll(foreign);
+      for (const id of [randomUUID(), foreignDevice.device.id]) {
+        const response = await gql(
+          owner.approver.accessToken,
+          revokeBatchQuery,
+          { ids: [ownDevice.device.id, id] },
+        );
+        expect(error(response)).toBe('NOT_FOUND');
+        expect(JSON.stringify(response.body)).not.toContain(id);
+        expect(JSON.stringify(response.body)).not.toContain(
+          ownDevice.device.id,
+        );
+      }
+      expect(
+        await connection
+          .db!.collection('devices')
+          .countDocuments({ status: 'ACTIVE' }),
+      ).toBe(2);
+      expect(
+        await connection
+          .db!.collection('auditEvents')
+          .countDocuments({ action: 'DEVICE_REVOKED' }),
+      ).toBe(0);
+      expect(
+        (await gql(owner.target.accessToken, currentQuery)).body.data
+          .currentDevice.status,
+      ).toBe('ACTIVE');
+      expect(
+        (await gql(foreign.target.accessToken, currentQuery)).body.data
+          .currentDevice.status,
+      ).toBe('ACTIVE');
+      // ADMIN authority changes ownership scope, never existence requirements.
+      const admin = await fixture('ADMIN');
+      expect(
+        error(
+          await gql(admin.approver.accessToken, adminRevokeBatchQuery, {
+            ids: [ownDevice.device.id, randomUUID()],
+          }),
+        ),
+      ).toBe('NOT_FOUND');
+      expect(
+        await connection
+          .db!.collection('devices')
+          .countDocuments({ status: 'ACTIVE' }),
+      ).toBe(2);
+    });
+
+    it('rejects empty, oversized, duplicate, invalid, null and private batch inputs', async () => {
+      const owner = await fixture();
+      const { device } = await enroll(owner);
+      for (const input of [
+        { ids: [] },
+        { ids: Array.from({ length: 21 }, () => randomUUID()) },
+        { ids: [device.id, device.id] },
+        { ids: ['invalid'] },
+        { ids: null },
+        { ids: [null] },
+        { ids: [{ $ne: null }] },
+        { ids: [device.id], userId: owner.id },
+        { ids: [device.id], lectureTitle: 'synthetic-private-marker' },
+      ]) {
+        const response = await gql(
+          owner.approver.accessToken,
+          revokeBatchQuery,
+          input,
+        );
+        expect(error(response)).toBe('VALIDATION_ERROR');
+        expect(JSON.stringify(response.body)).not.toContain(
+          'synthetic-private-marker',
+        );
+      }
+      expect(
+        (await gql(owner.target.accessToken, currentQuery)).body.data
+          .currentDevice.status,
+      ).toBe('ACTIVE');
+      expect(
+        await connection
+          .db!.collection('auditEvents')
+          .countDocuments({ action: 'DEVICE_REVOKED' }),
+      ).toBe(0);
+    });
+
+    it('accepts exactly 20 selected devices and charges the shared single/batch revocation budget by ID', async () => {
+      const owner = await fixture();
+      const ids = Array.from({ length: 20 }, () => randomUUID());
+      assertExactTestDatabase(connection, name);
+      await connection.db!.collection('devices').insertMany(
+        ids.map((id) => ({
+          _id: id as never,
+          userId: owner.id,
+          label: 'Synthetic Batch Fixture',
+          platform: 'IOS',
+          status: 'ACTIVE',
+          createdAt: new Date(),
+          revokedAt: null,
+        })),
+      );
+      const result = await gql(owner.approver.accessToken, revokeBatchQuery, {
+        ids,
+      });
+      expect(result.body.data.revokeDevices).toMatchObject({
+        page: 1,
+        pageSize: 20,
+        total: 20,
+      });
+      expect(
+        await connection
+          .db!.collection('devices')
+          .countDocuments({ status: 'REVOKED' }),
+      ).toBe(20);
+      expect(
+        await connection
+          .db!.collection('auditEvents')
+          .countDocuments({ action: 'DEVICE_REVOKED' }),
+      ).toBe(20);
+      // Seed both adjacent buckets at the consumed value to keep rejection
+      // deterministic even if the wall clock crosses a minute after the batch.
+      const bucket = Math.floor(Date.now() / 60000);
+      for (const minute of [bucket, bucket + 1])
+        await connection
+          .db!.collection('authAttempts')
+          .updateOne(
+            { _id: digest(`enrollment:revoke:${owner.id}:${minute}`) as never },
+            { $set: { count: 20, expiresAt: new Date(Date.now() + 180000) } },
+            { upsert: true },
+          );
+      expect(
+        error(
+          await gql(owner.approver.accessToken, revokeQuery, { id: ids[0] }),
+        ),
+      ).toBe('RATE_LIMITED');
+      expect(
+        error(
+          await gql(owner.approver.accessToken, revokeBatchQuery, {
+            ids: [ids[0]],
+          }),
+        ),
+      ).toBe('RATE_LIMITED');
+    });
+
+    it('rolls back all devices, sessions and earlier audit writes when the second audit fails', async () => {
+      const owner = await fixture();
+      const first = await enroll(owner);
+      const second = await enrollAnother(owner);
+      const ids = [first.device.id, second.device.id];
+      const audit = app.get(AuditService);
+      const original = audit.deviceChanged.bind(audit);
+      let attempts = 0;
+      const spy = jest
+        .spyOn(audit, 'deviceChanged')
+        .mockImplementation(async (...args) => {
+          if (++attempts === 2) throw new Error('synthetic-private-marker');
+          return original(...args);
+        });
+      try {
+        const response = await gql(
+          owner.approver.accessToken,
+          revokeBatchQuery,
+          { ids },
+        );
+        expect(error(response)).toBe('INTERNAL_ERROR');
+        expect(JSON.stringify(response.body)).not.toContain(
+          'synthetic-private-marker',
+        );
+      } finally {
+        spy.mockRestore();
+      }
+      expect(attempts).toBe(2);
+      expect(
+        await connection
+          .db!.collection('auditEvents')
+          .countDocuments({ action: 'DEVICE_REVOKED' }),
+      ).toBe(0);
+      expect(
+        await connection
+          .db!.collection('devices')
+          .countDocuments({ status: 'ACTIVE' }),
+      ).toBe(2);
+      for (const target of [owner.target, second.target]) {
+        expect(
+          (await gql(target.accessToken, currentQuery)).body.data.currentDevice
+            .status,
+        ).toBe('ACTIVE');
+        await refresh(target.refreshToken).expect(200);
+      }
+      expect(
+        (await gql(owner.approver.accessToken, revokeBatchQuery, { ids })).body
+          .data.revokeDevices.total,
+      ).toBe(2);
+      expect(
+        await connection
+          .db!.collection('auditEvents')
+          .countDocuments({ action: 'DEVICE_REVOKED' }),
+      ).toBe(2);
+    });
+
+    it('serializes overlapping batches and preserves the previously committed device timestamp', async () => {
+      const owner = await fixture();
+      const first = await enroll(owner);
+      const second = await enrollAnother(owner);
+      const third = await enrollAnother(owner);
+      const results = await Promise.all([
+        gql(owner.approver.accessToken, revokeBatchQuery, {
+          ids: [first.device.id, second.device.id],
+        }),
+        gql(owner.approver.accessToken, revokeBatchQuery, {
+          ids: [second.device.id, third.device.id],
+        }),
+      ]);
+      expect(results.every((r) => r.body.data?.revokeDevices)).toBe(true);
+      const timestamps = results.map(
+        (r) =>
+          r.body.data.revokeDevices.items.find(
+            (d: { id: string }) => d.id === second.device.id,
+          ).revokedAt,
+      );
+      expect(timestamps[0]).toBe(timestamps[1]);
+      const events = await connection
+        .db!.collection('auditEvents')
+        .find({ action: 'DEVICE_REVOKED' })
+        .toArray();
+      expect(events).toHaveLength(3);
+      expect(new Set(events.map((e) => e.subjectDeviceId)).size).toBe(3);
+    });
+
+    it('rejects a batch that would exceed the remaining weighted budget without changing any device', async () => {
+      const owner = await fixture();
+      const first = await enroll(owner);
+      const second = await enrollAnother(owner);
+      const bucket = Math.floor(Date.now() / 60000);
+      assertExactTestDatabase(connection, name);
+      for (const minute of [bucket, bucket + 1])
+        await connection
+          .db!.collection('authAttempts')
+          .updateOne(
+            { _id: digest(`enrollment:revoke:${owner.id}:${minute}`) as never },
+            { $set: { count: 19, expiresAt: new Date(Date.now() + 180000) } },
+            { upsert: true },
+          );
+      expect(
+        error(
+          await gql(owner.approver.accessToken, revokeBatchQuery, {
+            ids: [first.device.id, second.device.id],
+          }),
+        ),
+      ).toBe('RATE_LIMITED');
+      expect(
+        await connection
+          .db!.collection('devices')
+          .countDocuments({ status: 'ACTIVE' }),
+      ).toBe(2);
+      expect(
+        await connection
+          .db!.collection('auditEvents')
+          .countDocuments({ action: 'DEVICE_REVOKED' }),
+      ).toBe(0);
+      const single = await gql(owner.approver.accessToken, revokeQuery, {
+        id: first.device.id,
+      });
+      expect(single.body.data.revokeDevice.status).toBe('REVOKED');
+      expect(
+        (await gql(second.target.accessToken, currentQuery)).body.data
+          .currentDevice.status,
+      ).toBe('ACTIVE');
+    });
+
+    it('rechecks admin authority against a concurrent demotion without a partially applied selection', async () => {
+      const owner = await fixture();
+      const actor = await fixture('ADMIN');
+      const administrator = await fixture('ADMIN');
+      const first = await enroll(owner);
+      const second = await enrollAnother(owner);
+      const update =
+        'mutation($input: UpdateAccountAccessInput!) { adminUpdateAccountAccess(input: $input) { id role } }';
+      const [batch, demoted] = await Promise.all([
+        gql(actor.approver.accessToken, adminRevokeBatchQuery, {
+          ids: [first.device.id, second.device.id],
+        }),
+        gql(administrator.approver.accessToken, update, {
+          id: actor.id,
+          role: 'USER',
+        }),
+      ]);
+      expect(demoted.body.data.adminUpdateAccountAccess.role).toBe('USER');
+      const revoked = await connection
+        .db!.collection('devices')
+        .countDocuments({ status: 'REVOKED' });
+      if (batch.body.data?.adminRevokeDevices) expect(revoked).toBe(2);
+      else {
+        expect(['UNAUTHENTICATED', 'FORBIDDEN']).toContain(error(batch));
+        expect(revoked).toBe(0);
+      }
+      expect(
+        await connection
+          .db!.collection('auditEvents')
+          .countDocuments({ action: 'DEVICE_REVOKED' }),
+      ).toBe(revoked);
+      await gql(actor.approver.accessToken, currentQuery).expect(401);
+    });
+
+    it('permits a batch containing the caller device and invalidates its credentials after success', async () => {
+      const owner = await fixture();
+      const first = await enroll(owner);
+      const second = await enrollAnother(owner);
+      const response = await gql(owner.target.accessToken, revokeBatchQuery, {
+        ids: [first.device.id, second.device.id],
+      });
+      expect(response.body.data.revokeDevices.total).toBe(2);
+      await gql(owner.target.accessToken, currentQuery).expect(401);
+      await refresh(owner.target.refreshToken).expect(401);
+      await gql(second.target.accessToken, currentQuery).expect(401);
+      expect(
+        (await gql(owner.approver.accessToken, currentQuery)).body.data
+          .currentDevice,
+      ).toBeNull();
+    });
   });
 });

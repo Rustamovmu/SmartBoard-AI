@@ -11,7 +11,7 @@ Implemented at `POST /graphql`; see the versioned [schema](schema.graphql). Publ
 5. A transaction checks the live actor, target account version/session/lifetime, code expiry and single use; creates the device; binds the target session; consumes the code; and writes an audit event. Any failure rolls everything back. TTL cleanup is housekeeping; expiry is enforced in the transaction. The target can refresh while waiting, and the binding survives refresh without extending its original session lifetime.
 6. The target polls `currentDevice` with its existing credentials. It returns `null` before approval; after approval it returns the enrolled device. No credential is passed between devices. GraphQL context is request-scoped: poll in a subsequent request after approval, rather than relying on another field in the same operation to refresh context.
 
-Each account can have at most 20 ACTIVE device records. Creating a request uses a budget of 5/account/minute, confirmation attempts 10/account/minute, revocations 20/account/minute, in addition to GraphQL's 60/IP/minute and 60/account/minute limits. Buckets use UTC epoch minutes. Failed business attempts consume their budget. Rejected GraphQL/DTO shapes consume only the outer GraphQL budget. Codes/labels are never rate-limit keys.
+Each account can have at most 20 ACTIVE device records. Creating a request uses a budget of 5/account/minute, confirmation attempts 10/account/minute, revocations 20 submitted device IDs/account/minute, in addition to GraphQL's 60/IP/minute and 60/account/minute limits. Buckets use UTC epoch minutes. Failed business attempts consume their budget. Single and [bulk revocations](device-batches.md) share the revocation budget; each submitted ID costs one, including already-revoked IDs. Rejected GraphQL/DTO shapes consume only the outer GraphQL budget. Codes/labels are never rate-limit keys.
 
 ## Operations and exact examples
 
@@ -116,7 +116,7 @@ Access authentication and refresh independently check bound device existence, ow
 
 Account blocking/role changes revoke all account sessions under the existing auth-version policy. Device records remain as platform inventory; reactivation restores no old session. Logout also leaves inventory intact. Revocation is permanent for that record; a new login is unbound and requires a new explicit enrollment, producing a new device ID. Login accepts no device ID or pairing code. This increment binds enrollment to one auth-session family, not to a permanent phone hardware identity; future persistent reattachment requires a separately reviewed credential contract.
 
-Unbound sessions retain existing account operations. Future `/analysis/access` must require a live enrolled-device binding as well as current account status. Control sockets/analysis grants and their active-stream shutdown are not implemented here. No operation wipes phone files, catalog or exports.
+Unbound sessions retain existing account operations. Future `/analysis/access` must require a live enrolled-device binding as well as current account status. Control sockets/analysis grants and their active-stream shutdown are not implemented here. No operation wipes phone files, catalog or exports. [Atomic selected-device batches](device-batches.md) add `revokeDevices` and `adminRevokeDevices` without enabling GraphQL HTTP request batching.
 
 ## Setup, tests and cleanup
 

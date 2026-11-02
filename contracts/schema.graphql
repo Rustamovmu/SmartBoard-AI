@@ -88,10 +88,12 @@ type EnrolledDevice {
 
 type Mutation {
   adminRevokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
+  adminRevokeDevices(input: RevokeDevicesInput!): DevicePage!
   adminUpdateAccountAccess(input: UpdateAccountAccessInput!): Account!
   confirmDevicePairing(input: ConfirmDevicePairingInput!): EnrolledDevice!
   createDevicePairing(input: CreateDevicePairingInput!): DevicePairing!
   revokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
+  revokeDevices(input: RevokeDevicesInput!): DevicePage!
 }
 
 type Query {
@@ -104,6 +106,10 @@ type Query {
 
 input RevokeDeviceInput {
   id: ID!
+}
+
+input RevokeDevicesInput {
+  ids: [ID!]!
 }
 
 input UpdateAccountAccessInput {

@@ -3077,6 +3077,681 @@
         "disableCookies": true
       },
       "response": []
+    },
+    {
+      "name": "58 Login second native batch target",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"pairing-{{testRunId}}@example.test\",\n  \"password\": \"{{fixturePassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Native grant', () => pm.expect(pm.response.json().accessToken).to.be.a('string'));",
+              "pm.variables.set('batchTargetAccess', pm.response.json().accessToken); pm.variables.set('batchTargetRefresh', pm.response.json().refreshToken);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "59 Start second device pairing",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{batchTargetAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: CreateDevicePairingInput!) { createDevicePairing(input: $input) { code expiresAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"label\": \"Synthetic Batch Phone\",\n      \"platform\": \"IOS\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Pairing created', () => pm.expect(pm.response.json().data.createDevicePairing.code).to.be.a('string'));",
+              "pm.variables.set('batchPairingCode', pm.response.json().data.createDevicePairing.code);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "60 Approve second batch device",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pairApproverAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: ConfirmDevicePairingInput!) { confirmDevicePairing(input: $input) { id status userId } }\",\n  \"variables\": {\n    \"input\": {\n      \"code\": \"{{batchPairingCode}}\"\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Active selected device', () => pm.expect(pm.response.json().data.confirmDevicePairing.status).to.eql('ACTIVE'));",
+              "pm.variables.set('batchDeviceId', pm.response.json().data.confirmDevicePairing.id);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "61 Reject entire selection with missing device",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pairApproverAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: RevokeDevicesInput!) { revokeDevices(input: $input) { items { id status revokedAt } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {\n      \"ids\": [\n        \"{{batchDeviceId}}\",\n        \"{{$guid}}\"\n      ]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe NOT_FOUND', () => pm.expect(pm.response.json().errors[0].extensions.code).to.eql('NOT_FOUND'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "62 Rejected batch preserved active target",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{batchTargetAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query { currentDevice { id status } }\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('No partial revocation', () => pm.expect(pm.response.json().data.currentDevice.status).to.eql('ACTIVE'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "63 Reject duplicate selected IDs",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pairApproverAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: RevokeDevicesInput!) { revokeDevices(input: $input) { items { id status revokedAt } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {\n      \"ids\": [\n        \"{{batchDeviceId}}\",\n        \"{{batchDeviceId}}\"\n      ]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe VALIDATION_ERROR', () => pm.expect(pm.response.json().errors[0].extensions.code).to.eql('VALIDATION_ERROR'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "64 USER cannot run administrator batch",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pairApproverAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: RevokeDevicesInput!) { adminRevokeDevices(input: $input) { items { id status revokedAt } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {\n      \"ids\": [\n        \"{{enrolledDeviceId}}\",\n        \"{{batchDeviceId}}\"\n      ]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe FORBIDDEN', () => pm.expect(pm.response.json().errors[0].extensions.code).to.eql('FORBIDDEN'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "65 Owner atomically revokes selected devices",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pairApproverAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: RevokeDevicesInput!) { revokeDevices(input: $input) { items { id status revokedAt } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {\n      \"ids\": [\n        \"{{enrolledDeviceId}}\",\n        \"{{batchDeviceId}}\"\n      ]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "const page = pm.response.json().data.revokeDevices;",
+              "pm.test('Complete single-page selection', () => pm.expect(page).to.include({page: 1, pageSize: 2, total: 2}));",
+              "pm.test('Input order preserved', () => pm.expect(page.items.map(d => d.id)).to.deep.eql([pm.variables.get('enrolledDeviceId'), pm.variables.get('batchDeviceId')]));",
+              "pm.test('All selected devices revoked', () => pm.expect(page.items.every(d => d.status === 'REVOKED')).to.eql(true));",
+              "pm.variables.set('batchCommittedItems', JSON.stringify(page.items));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "66 Batch revoked access rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{batchTargetAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"query { currentDevice { id } }\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe UNAUTHENTICATED', () => pm.expect(pm.response.json().errors[0].extensions.code).to.eql('UNAUTHENTICATED'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "67 Batch revoked refresh rejected",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{batchTargetRefresh}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Refresh rejected', () => pm.expect(pm.response.json().code).to.eql('UNAUTHENTICATED'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "68 Administrator repeat preserves committed timestamps",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: RevokeDevicesInput!) { adminRevokeDevices(input: $input) { items { id status revokedAt } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {\n      \"ids\": [\n        \"{{enrolledDeviceId}}\",\n        \"{{batchDeviceId}}\"\n      ]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Existing revocation unchanged', () => pm.expect(pm.response.json().data.adminRevokeDevices.items).to.deep.eql(JSON.parse(pm.variables.get('batchCommittedItems'))));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "69 Administrator batch still requires every ID",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminAccessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"mutation($input: RevokeDevicesInput!) { adminRevokeDevices(input: $input) { items { id status revokedAt } page pageSize total } }\",\n  \"variables\": {\n    \"input\": {\n      \"ids\": [\n        \"{{batchDeviceId}}\",\n        \"{{$guid}}\"\n      ]\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('Safe NOT_FOUND', () => pm.expect(pm.response.json().errors[0].extensions.code).to.eql('NOT_FOUND'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
+    },
+    {
+      "name": "70 GraphQL HTTP request arrays remain disabled",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-SmartBord-Client",
+            "value": "native"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pairApproverAccess}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/graphql",
+          "host": ["{{baseUrl}}"],
+          "path": ["graphql"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"query\": \"query { currentAccount { id } }\"\n  }\n]",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+              "pm.test('No-store response', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+              "pm.test('Disposable test host', () => pm.expect(pm.response.headers.get('X-SmartBord-Test-Run')).to.eql(pm.variables.get('testRunId')));",
+              "pm.test('No batch data exposed', () => pm.expect(pm.response.json()).not.to.have.property('data'));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookies": true
+      },
+      "response": []
     }
   ]
 }

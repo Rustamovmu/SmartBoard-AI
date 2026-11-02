@@ -12,6 +12,7 @@ import {
   DevicesInput,
   EnrolledDevice,
   RevokeDeviceInput,
+  RevokeDevicesInput,
 } from './dto/device.dto';
 
 @Resolver()
@@ -71,6 +72,32 @@ export class DeviceEnrollmentResolver {
   ) {
     return this.devices.revoke(
       input.id,
+      ctx.credential,
+      ctx.req.authTransport,
+      true,
+    );
+  }
+
+  @Mutation(() => DevicePage)
+  revokeDevices(
+    @Args('input') input: RevokeDevicesInput,
+    @Context() ctx: PlatformGraphqlContext,
+  ) {
+    return this.devices.revokeMany(
+      input.ids,
+      ctx.credential,
+      ctx.req.authTransport,
+    );
+  }
+
+  @UseGuards(GraphqlAdminGuard)
+  @Mutation(() => DevicePage)
+  adminRevokeDevices(
+    @Args('input') input: RevokeDevicesInput,
+    @Context() ctx: PlatformGraphqlContext,
+  ) {
+    return this.devices.revokeMany(
+      input.ids,
       ctx.credential,
       ctx.req.authTransport,
       true,

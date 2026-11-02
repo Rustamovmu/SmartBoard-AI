@@ -7,6 +7,10 @@ import {
   registerEnumType,
 } from '@nestjs/graphql';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
   IsEnum,
   IsInt,
   IsString,
@@ -81,4 +85,15 @@ export class AdminDevicesInput extends DevicesInput {
 @InputType()
 export class RevokeDeviceInput {
   @Field(() => ID) @IsUUID('4') id: string;
+}
+
+@InputType()
+export class RevokeDevicesInput {
+  @Field(() => [ID])
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(20)
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  ids: string[];
 }
