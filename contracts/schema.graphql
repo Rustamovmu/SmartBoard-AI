@@ -39,6 +39,37 @@ input AdminDevicesInput {
   userId: ID!
 }
 
+input AdminHelpEntriesInput {
+  kind: HelpKind!
+  page: Int! = 1
+  pageSize: Int! = 20
+  state: HelpState
+  topic: HelpTopic
+}
+
+type AdminHelpEntry {
+  bodyMarkdown: String!
+  createdAt: String!
+  createdByUserId: ID!
+  id: ID!
+  kind: HelpKind!
+  order: Int!
+  publishedAt: String
+  revision: Int!
+  state: HelpState!
+  title: String!
+  topic: HelpTopic
+  updatedAt: String!
+  updatedByUserId: ID!
+}
+
+type AdminHelpPage {
+  items: [AdminHelpEntry!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
 input ConfirmDevicePairingInput {
   code: String!
 }
@@ -46,6 +77,14 @@ input ConfirmDevicePairingInput {
 input CreateDevicePairingInput {
   label: String!
   platform: DevicePlatform!
+}
+
+input CreateHelpEntryInput {
+  bodyMarkdown: String!
+  kind: HelpKind!
+  order: Int! = 0
+  title: String!
+  topic: HelpTopic
 }
 
 type DevicePage {
@@ -86,21 +125,82 @@ type EnrolledDevice {
   userId: ID!
 }
 
+input HelpEntriesInput {
+  kind: HelpKind!
+  page: Int! = 1
+  pageSize: Int! = 20
+  topic: HelpTopic
+}
+
+enum HelpKind {
+  ANNOUNCEMENT
+  FAQ
+}
+
+enum HelpState {
+  ARCHIVED
+  DRAFT
+  PUBLISHED
+}
+
+enum HelpTopic {
+  ACCOUNTS
+  DEVICES
+  GENERAL
+  LOCAL_STORAGE
+  OTHER
+  PRIVACY
+}
+
 type Mutation {
+  adminCreateHelpEntry(input: CreateHelpEntryInput!): AdminHelpEntry!
   adminRevokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
   adminRevokeDevices(input: RevokeDevicesInput!): DevicePage!
   adminUpdateAccountAccess(input: UpdateAccountAccessInput!): Account!
+  adminUpdateHelpEntry(input: UpdateHelpEntryInput!): AdminHelpEntry!
   confirmDevicePairing(input: ConfirmDevicePairingInput!): EnrolledDevice!
   createDevicePairing(input: CreateDevicePairingInput!): DevicePairing!
   revokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
   revokeDevices(input: RevokeDevicesInput!): DevicePage!
 }
 
+type PublishedHelpEntry {
+  bodyMarkdown: String!
+  id: ID!
+  kind: HelpKind!
+  order: Int!
+  publishedAt: String!
+  title: String!
+  topic: HelpTopic
+  updatedAt: String!
+}
+
+type PublishedHelpPage {
+  items: [PublishedHelpSummary!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+type PublishedHelpSummary {
+  id: ID!
+  kind: HelpKind!
+  order: Int!
+  publishedAt: String!
+  title: String!
+  topic: HelpTopic
+  updatedAt: String!
+}
+
 type Query {
   adminAccounts(input: AccountsInput!): AccountPage!
   adminDevices(input: AdminDevicesInput!): DevicePage!
+  adminHelpEntries(input: AdminHelpEntriesInput!): AdminHelpPage!
+  adminHelpEntry(id: ID!): AdminHelpEntry!
   currentAccount: Account!
   currentDevice: EnrolledDevice
+  helpEntries(input: HelpEntriesInput!): PublishedHelpPage!
+  helpEntry(id: ID!): PublishedHelpEntry!
   myDevices(input: DevicesInput!): DevicePage!
 }
 
@@ -116,4 +216,14 @@ input UpdateAccountAccessInput {
   id: ID!
   role: AccountRole
   status: AccountState
+}
+
+input UpdateHelpEntryInput {
+  bodyMarkdown: String
+  expectedRevision: Int!
+  id: ID!
+  order: Int
+  state: HelpState
+  title: String
+  topic: HelpTopic
 }

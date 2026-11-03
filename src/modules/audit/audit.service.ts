@@ -10,6 +10,33 @@ export class AuditService {
   constructor(
     @InjectModel(AUDIT_MODEL) private readonly events: Model<AuditEvent>,
   ) {}
+  async helpChanged(
+    actor: string,
+    entry: string,
+    previousState: string | null,
+    state: string,
+    revision: number,
+    session: ClientSession,
+  ) {
+    await this.events.create(
+      [
+        {
+          _id: randomUUID(),
+          action: 'HELP_ENTRY_CHANGED',
+          actorType: 'ADMIN',
+          actorUserId: actor,
+          subjectHelpEntryId: entry,
+          ...(previousState === null
+            ? {}
+            : { previousHelpState: previousState }),
+          nextHelpState: state,
+          helpRevision: revision,
+          createdAt: new Date(),
+        },
+      ],
+      { session },
+    );
+  }
   async prepare() {
     await this.events.createCollection();
     await this.events.createIndexes();

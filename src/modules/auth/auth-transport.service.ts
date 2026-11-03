@@ -39,6 +39,23 @@ export class AuthTransportService {
     return /^[A-Za-z0-9_.-]{1,512}$/.test(value) ? value : undefined;
   }
 
+  assertPublicRead(request: Request) {
+    if (
+      request.headers['x-smartbord-client'] !== 'public' ||
+      request.headers.cookie ||
+      request.headers.authorization ||
+      request.headers['x-csrf-token']
+    )
+      throw new ForbiddenException();
+    const origin = request.headers.origin;
+    if (
+      origin !== undefined &&
+      (typeof origin !== 'string' ||
+        !this.config.browserOrigins.includes(origin))
+    )
+      throw new ForbiddenException();
+  }
+
   assertRequest(request: Request): AuthTransport {
     const client = request.headers['x-smartbord-client'];
     if (client !== 'browser' && client !== 'native')

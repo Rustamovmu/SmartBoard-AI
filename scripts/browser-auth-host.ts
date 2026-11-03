@@ -1,3 +1,4 @@
+import { HelpSchemaService } from '../src/modules/help-center/help-schema.service';
 // Test-only IPC host. Never imported by AppModule or exposed as an HTTP route.
 import 'reflect-metadata';
 import { readFileSync } from 'node:fs';
@@ -75,6 +76,7 @@ async function main() {
     await app.get(AuditService).prepare();
     await app.get(AdminPolicyService).prepare();
     await app.get(DeviceSchemaService).prepare();
+    await app.get(HelpSchemaService).prepare();
     // Explicit browser-admin mode only. Seed through services after proving
     // ownership/initial emptiness; never accept caller-selected fixture details.
     const adminFixture: { id: string; email: string; name: string }[] = [];

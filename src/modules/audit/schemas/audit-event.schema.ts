@@ -19,6 +19,7 @@ export class AuditEvent {
       'DEVICE_REVOKED',
       'PASSWORD_RECOVERY_ISSUED',
       'PASSWORD_RESET',
+      'HELP_ENTRY_CHANGED',
     ],
     required: true,
   })
@@ -41,8 +42,25 @@ export class AuditEvent {
   previousStatus?: string;
   @Prop({ type: String, enum: ['ACTIVE', 'BLOCKED', 'DELETED'] })
   nextStatus?: string;
-  @Prop({ required: true })
-  subjectUserId: string;
+  @Prop({
+    type: String,
+    required: function (this: AuditEvent) {
+      return this.action !== 'HELP_ENTRY_CHANGED';
+    },
+  })
+  subjectUserId?: string;
+  @Prop({
+    type: String,
+    required: function (this: AuditEvent) {
+      return this.action === 'HELP_ENTRY_CHANGED';
+    },
+  })
+  subjectHelpEntryId?: string;
+  @Prop({ type: String, enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'] })
+  previousHelpState?: string;
+  @Prop({ type: String, enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'] })
+  nextHelpState?: string;
+  @Prop({ type: Number }) helpRevision?: number;
   @Prop({ required: true })
   createdAt: Date;
 }

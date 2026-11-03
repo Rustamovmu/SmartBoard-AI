@@ -15,6 +15,7 @@ import { AuthSchemaService } from '../modules/auth/auth-schema.service';
 import { AuthRateLimitService } from '../modules/auth/auth-rate-limit.service';
 import type { CurrentAccountRequest } from '../modules/auth/guards/current-account.guard';
 import { formatGraphqlError, safeGraphqlError } from './graphql-errors';
+import { assertPublicHelpQuery } from './public-help-policy';
 import { documentLimits } from './document-limits';
 
 @Module({
@@ -58,6 +59,15 @@ import { documentLimits } from './document-limits';
           res.setHeader('Cache-Control', 'no-store');
           try {
             if (req.method !== 'POST') throw new MethodNotAllowedException();
+            if (req.headers['x-smartbord-client'] === 'public') {
+              transport.assertPublicRead(req);
+              await schema.assertPrepared();
+              await limits.consume('graphql:ip', req.ip ?? 'unknown', 60);
+              assertPublicHelpQuery(
+                (req.body as { query?: unknown } | undefined)?.query,
+              );
+              return { req, res, publicRead: true };
+            }
             req.authTransport = transport.assertRequest(req);
             await schema.assertPrepared();
             await limits.consume('graphql:ip', req.ip ?? 'unknown', 60);

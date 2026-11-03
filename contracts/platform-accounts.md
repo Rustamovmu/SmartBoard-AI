@@ -6,11 +6,11 @@ Implemented on 2026-11-02. The account surface in the versioned [schema](schema.
 
 Use transaction-capable MongoDB and run `npm run db:prepare` explicitly. This prepares platform schemas/indexes and inserts the singleton `platformSettings` administrator policy if absent, preserving an existing revision. It creates no account and drops nothing. Bootstrap a real administrator only with the explicit [local command](authentication.md). No administrator was created in the application database during this increment.
 
-Every GraphQL request requires `Content-Type: application/json` and `X-SmartBord-Client: native` or `browser`. Native requests send `Authorization: Bearer <accessToken>` without Origin/Cookie headers. Browser requests send the allowed HTTPS Origin, access/CSRF cookies and `X-CSRF-Token` from `/auth/csrf`, including for queries. See [authentication](authentication.md). Credentials must not appear in URLs. Responses use `Cache-Control: no-store`.
+Every account GraphQL request requires `Content-Type: application/json` and `X-SmartBord-Client: native` or `browser`. Native requests send `Authorization: Bearer <accessToken>` without Origin/Cookie headers. Browser requests send the allowed HTTPS Origin, access/CSRF cookies and `X-CSRF-Token` from `/auth/csrf`, including for queries. See [authentication](authentication.md). Credentials must not appear in URLs. Responses use `Cache-Control: no-store`.
 
-Send `{ "query": "<operation>", "variables": { ... } }`. JSON bodies are limited to 8 KiB. Only one operation per document, at most five root fields, 80 total AST fields, six selection levels and six definitions are allowed. Pages allow 1–100 items; page number is 1–10000. Root field limits also apply to aliases and fragment definitions. Schema introspection, browser IDEs, HTTP batching and persisted queries are disabled. The server writes no runtime schema file; `npm run schema:generate` generates the handoff artifact without a database connection or listener. Integration tests compare it with the actual schema.
+Send `{ "query": "<operation>", "variables": { ... } }`. GraphQL JSON bodies are limited to 64 KiB, with an 8 KiB UTF-8 operation-document limit. [Published Help](help-center.md) additionally supports an explicit credential-free public mode restricted to its two reader queries; account operations still require the identity and transport described here. Only one operation per document, at most five root fields, 80 total AST fields, six selection levels and six definitions are allowed. Pages allow 1–100 items; page number is 1–10000. Root field limits also apply to aliases and fragment definitions. Schema introspection, browser IDEs, HTTP batching and persisted queries are disabled. The server writes no runtime schema file; `npm run schema:generate` generates the handoff artifact without a database connection or listener. Integration tests compare it with the actual schema.
 
-Current account/session/status is checked for every request. GraphQL uses fixed one-minute limits of 60 requests/IP and 60/account, backed by hashed identifiers in expiring `authAttempts`. Proxy IP trust stays disabled. List totals and items are separate bounded reads and can differ during concurrent account changes.
+Current account/session/status is checked for every account request. GraphQL uses fixed one-minute limits of 60 requests/IP and 60/account, backed by hashed identifiers in expiring `authAttempts`. Proxy IP trust stays disabled. List totals and items are separate bounded reads and can differ during concurrent account changes.
 
 ## Current account
 
@@ -18,7 +18,14 @@ Identity: any current ACTIVE account with a valid session. It returns only that 
 
 ```graphql
 query CurrentAccount {
-  currentAccount { id email name role status createdAt }
+  currentAccount {
+    id
+    email
+    name
+    role
+    status
+    createdAt
+  }
 }
 ```
 
@@ -31,8 +38,17 @@ Identity: current ACTIVE ADMIN. USER requests return `FORBIDDEN`.
 ```graphql
 query AdminAccounts($input: AccountsInput!) {
   adminAccounts(input: $input) {
-    items { id email name role status createdAt }
-    page pageSize total
+    items {
+      id
+      email
+      name
+      role
+      status
+      createdAt
+    }
+    page
+    pageSize
+    total
   }
 }
 ```
@@ -46,7 +62,12 @@ Identity: current ACTIVE ADMIN, rechecked inside the transaction after acquiring
 ```graphql
 mutation AdminUpdateAccountAccess($input: UpdateAccountAccessInput!) {
   adminUpdateAccountAccess(input: $input) {
-    id email name role status createdAt
+    id
+    email
+    name
+    role
+    status
+    createdAt
   }
 }
 ```

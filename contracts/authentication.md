@@ -14,7 +14,7 @@ Public signup creates USER/ACTIVE only; role/status/user IDs and all unknown fie
 
 ## Shared request rules
 
-All auth requests require `X-SmartBord-Client: native` or `browser`. POST requires `Content-Type: application/json`; send `{}` for a body with no fields. HTTP JSON is limited to 8 KiB; oversized/malformed bodies return 413/400 without reflecting input. Unknown fields return 400 `VALIDATION_ERROR`. All auth responses use `Cache-Control: no-store`.
+All auth requests require `X-SmartBord-Client: native` or `browser`. POST requires `Content-Type: application/json`; send `{}` for a body with no fields. Authentication JSON is limited to 8 KiB; oversized/malformed bodies return 413/400 without reflecting input. Unknown fields return 400 `VALIDATION_ERROR`. All auth responses use `Cache-Control: no-store`.
 
 Native requests must carry no Origin or Cookie header. `GET /auth/me` uses `Authorization: Bearer <accessToken>`; refresh/logout take `{ "refreshToken": "<credential>" }`. Tokens must be stored in the future native Keychain/Keystore adapter, not ordinary SQLite/localStorage. Backend tests cannot prove that adapter exists.
 
@@ -26,15 +26,15 @@ First call `GET /auth/csrf` with the browser headers and credentials enabled. It
 
 These operations have no GraphQL Variables. Prerequisites are prepared platform schemas/indexes and reachable transaction-capable MongoDB with suitable permissions. No administrator identity is required for public identity operations; `me` requires the current authenticated account.
 
-| Endpoint | Body / identity | Expected success | Main rejections |
-| --- | --- | --- | --- |
-| POST /auth/signup | `{ "email": "person@example.test", "name": "Person", "password": "<12–128 chars>" }` | 201; user and session grant | 400 invalid/unknown fields; 409 duplicate email; 429 limit |
-| POST /auth/login | `{ "email": "person@example.test", "password": "<password>" }` | 200; user and session grant | 401 wrong/unknown/inactive credentials; 429 limit |
-| POST /auth/refresh | Native refresh JSON; browser `{}` + cookies/CSRF | 200; rotated grant | 401 missing/expired/replayed credential; 403 browser origin/CSRF |
-| POST /auth/logout | Native refresh JSON; browser `{}` + cookies/CSRF | 200 `{ "success": true }`; browser cookies cleared | 400 malformed body; 403 origin/CSRF; 429 limit |
+| Endpoint                  | Body / identity                                                                                                    | Expected success                                                | Main rejections                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- | --------------------------------------------------------------------- |
+| POST /auth/signup         | `{ "email": "person@example.test", "name": "Person", "password": "<12–128 chars>" }`                               | 201; user and session grant                                     | 400 invalid/unknown fields; 409 duplicate email; 429 limit            |
+| POST /auth/login          | `{ "email": "person@example.test", "password": "<password>" }`                                                     | 200; user and session grant                                     | 401 wrong/unknown/inactive credentials; 429 limit                     |
+| POST /auth/refresh        | Native refresh JSON; browser `{}` + cookies/CSRF                                                                   | 200; rotated grant                                              | 401 missing/expired/replayed credential; 403 browser origin/CSRF      |
+| POST /auth/logout         | Native refresh JSON; browser `{}` + cookies/CSRF                                                                   | 200 `{ "success": true }`; browser cookies cleared              | 400 malformed body; 403 origin/CSRF; 429 limit                        |
 | POST /auth/password/reset | `{ "recoveryToken": "<operator-issued proof>", "password": "<12–128 chars>" }`; browser origin/CSRF still required | 200 `{ "success": true }`; all sessions revoked, no login grant | 400 invalid/private fields; 401 invalid/expired/used proof; 429 limit |
-| GET /auth/me | Native bearer or browser access cookie | 200 `{ "user": { ... } }` | 401 invalid/expired/revoked session; 403 inactive account |
-| GET /auth/csrf | Browser headers only | 200 `{ "csrfToken": "<nonce>" }` | 400 wrong client; 403 missing/unapproved Origin |
+| GET /auth/me              | Native bearer or browser access cookie                                                                             | 200 `{ "user": { ... } }`                                       | 401 invalid/expired/revoked session; 403 inactive account             |
+| GET /auth/csrf            | Browser headers only                                                                                               | 200 `{ "csrfToken": "<nonce>" }`                                | 400 wrong client; 403 missing/unapproved Origin                       |
 
 Public user shape: `{ id, email, name, role, status, createdAt }`. Native grants are `{ user, accessToken, refreshToken, accessExpiresAt, sessionExpiresAt }`. Browser grants are `{ user, accessExpiresAt, sessionExpiresAt }` plus cookies. Do not print, export or commit real credentials. Signup user+session and refresh changes use MongoDB transactions; signup session failure rolls the user insertion back.
 
@@ -66,3 +66,5 @@ Bootstrap acquires the shared administrator policy and creates a new ADMIN and `
 [Postman requests/results](../docs/Postman_Auth_Verification.md) and `test/auth.integration-spec.ts` cover real disposable MongoDB behavior. Tests mutate only generated fixtures to simulate expiry/blocking/roles and close/drop their own resources. Real MongoDB administrator/GraphQL checks are recorded in [account operations](platform-accounts.md). Device-bound sessions now additionally check current enrollment status during access authentication and refresh. The separate [Pages Router web verification](../../smartbord-ai-frontend-web/docs/Verification.md) records actual trusted-HTTPS browser signup/login, cookie delivery, CSRF, cross-tab refresh and logout against guarded disposable MongoDB. Native secure storage, email/notification delivery and connected-stream revocation remain unimplemented or unverified. Production web hosting and other browser engines are not certified by that local run. [Operator-assisted recovery](password-recovery.md) is implemented, including the private-pipe CLI and HTTP reset; its proof hash/expiry/version fields are hidden from ordinary selection and public DTOs. No private phone recording is created, accessed or erased by any auth command.
 
 Implementation references: [Nest validation](https://docs.nestjs.com/techniques/validation), [OWASP password storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html), [OWASP CSRF prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
+
+Published [Help queries](help-center.md) use a separate credential-free `X-SmartBord-Client: public` mode at `/graphql`. Authentication endpoints do not accept this mode. GraphQL JSON is capped at 64 KiB with an 8 KiB document limit; this does not change the 8 KiB authentication limit. Public Help requests issue no auth/CSRF cookies and cannot invoke account, enrollment or mutation roots.

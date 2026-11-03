@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { HelpResolver } from '../src/modules/help-center/help.resolver';
 import { NestFactory } from '@nestjs/core';
 import {
   GraphQLSchemaBuilderModule,
@@ -18,7 +19,7 @@ async function main() {
   try {
     const schema = await app
       .get(GraphQLSchemaFactory)
-      .create([AdminResolver, DeviceEnrollmentResolver]);
+      .create([AdminResolver, DeviceEnrollmentResolver, HelpResolver]);
     await writeFile(
       'contracts/schema.graphql',
       `${printSchema(lexicographicSortSchema(schema))}\n`,

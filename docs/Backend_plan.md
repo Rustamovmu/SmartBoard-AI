@@ -128,7 +128,7 @@ Allowed collections:
 - authAttempts: expiring rate-limit records.
 - devices: account, enrollment label/type, revocation and account-related last activity; no recording paths or lecture titles.
 - pairingRequests: expiring hashed single-use enrollment codes, without lecture content.
-- helpEntries: FAQ/announcement, title, body, topic, draft/published state, order and author.
+- helpEntries: FAQ/announcement, title, Markdown body, topic, draft/published/archived state, display order, revision, author/editor and timestamps. Archive/restore replaces permanent removal for this surface.
 - communityPosts/communityComments: explicitly published text, author and moderation state.
 - reports: community/platform report, reason and moderation outcome.
 - auditEvents: administrator/account actions without lecture payloads or recording-derived content.
@@ -207,6 +207,8 @@ Both plan documents use these routes:
 | Health | GET /health/live, /health/ready |
 
 There is no public media library, lecture-sync endpoint, recording database API or full-video upload endpoint.
+
+Published [Help](../contracts/help-center.md) is now implemented as the first B5 content increment, with credential-free reader queries and audited administrator draft/publication/archive management. Community remains planned.
 
 GraphQL lists return { items, page, pageSize, total }. Expose stable errors: UNAUTHENTICATED, FORBIDDEN, VALIDATION_ERROR, DEVICE_REVOKED, ANALYSIS_BUSY and VISION_UNAVAILABLE. DEVICE_STORAGE_FULL and LOCAL_SAVE_FAILED are local frontend errors, not claims that our server saves the files.
 

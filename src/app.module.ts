@@ -1,4 +1,5 @@
 import { BadRequestException, Module, ValidationPipe } from '@nestjs/common';
+import { HelpModule } from './modules/help-center/help.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { APP_FILTER, APP_PIPE } from '@nestjs/core';
@@ -22,6 +23,7 @@ import { DeviceEnrollmentModule } from './modules/device-enrollment/device-enrol
     AdminModule,
     DeviceEnrollmentModule,
     PlatformGraphqlModule,
+    HelpModule,
   ],
   controllers: [AppController],
   providers: [
