@@ -28,3 +28,25 @@ describe('audit subject validation', () => {
     });
   });
 });
+
+describe('community audit subjects', () => {
+  it('requires a community post subject and preserves user subjects for older actions', async () => {
+    const event = {
+      _id: 'event',
+      action: 'COMMUNITY_POST_CHANGED',
+      actorType: 'USER',
+      actorUserId: 'owner',
+      subjectCommunityPostId: 'post',
+      communityAction: 'CREATE',
+      nextCommunityState: 'DRAFT',
+      communityRevision: 1,
+      createdAt: new Date(),
+    };
+    await expect(new Audit(event).validate()).resolves.toBeUndefined();
+    await expect(
+      new Audit({ ...event, subjectCommunityPostId: undefined }).validate(),
+    ).rejects.toMatchObject({
+      errors: { subjectCommunityPostId: expect.anything() },
+    });
+  });
+});

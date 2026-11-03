@@ -52,7 +52,12 @@ export function assertPublicHelpQuery(query: unknown) {
     for (const node of selection.selections) {
       if (node.kind === Kind.FIELD) {
         if (
-          !['helpEntries', 'helpEntry'].includes(node.name.value) ||
+          ![
+            'helpEntries',
+            'helpEntry',
+            'communityPosts',
+            'communityPost',
+          ].includes(node.name.value) ||
           ++roots > 5
         )
           throw new UnauthorizedException();

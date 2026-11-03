@@ -70,8 +70,38 @@ type AdminHelpPage {
   total: Int!
 }
 
+enum CommunityModerationAction {
+  REMOVE
+  RESTORE
+}
+
+input CommunityPostsInput {
+  page: Int! = 1
+  pageSize: Int! = 20
+}
+
+enum CommunityReason {
+  ABUSE
+  OFF_TOPIC
+  OTHER
+  PRIVACY
+  SPAM
+}
+
+enum CommunityState {
+  DRAFT
+  PUBLISHED
+  REMOVED
+}
+
 input ConfirmDevicePairingInput {
   code: String!
+}
+
+input CreateCommunityPostInput {
+  bodyMarkdown: String!
+  publicDisplayName: String!
+  title: String!
 }
 
 input CreateDevicePairingInput {
@@ -152,16 +182,78 @@ enum HelpTopic {
   PRIVACY
 }
 
+type ManagedCommunityPage {
+  items: [ManagedCommunityPost!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+type ManagedCommunityPost {
+  authorUserId: ID!
+  bodyMarkdown: String!
+  createdAt: String!
+  id: ID!
+  publicDisplayName: String!
+  publishedAt: String
+  removalReason: CommunityReason
+  removedAt: String
+  revision: Int!
+  state: CommunityState!
+  title: String!
+  updatedAt: String!
+}
+
+input ManagedCommunityPostsInput {
+  page: Int! = 1
+  pageSize: Int! = 20
+  state: CommunityState
+}
+
+input ModerateCommunityPostInput {
+  action: CommunityModerationAction!
+  expectedRevision: Int!
+  id: ID!
+  reason: CommunityReason
+}
+
 type Mutation {
   adminCreateHelpEntry(input: CreateHelpEntryInput!): AdminHelpEntry!
+  adminModerateCommunityPost(input: ModerateCommunityPostInput!): ManagedCommunityPost!
   adminRevokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
   adminRevokeDevices(input: RevokeDevicesInput!): DevicePage!
   adminUpdateAccountAccess(input: UpdateAccountAccessInput!): Account!
   adminUpdateHelpEntry(input: UpdateHelpEntryInput!): AdminHelpEntry!
   confirmDevicePairing(input: ConfirmDevicePairingInput!): EnrolledDevice!
+  createCommunityPost(input: CreateCommunityPostInput!): ManagedCommunityPost!
   createDevicePairing(input: CreateDevicePairingInput!): DevicePairing!
   revokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
   revokeDevices(input: RevokeDevicesInput!): DevicePage!
+  updateCommunityPost(input: UpdateCommunityPostInput!): ManagedCommunityPost!
+}
+
+type PublishedCommunityPage {
+  items: [PublishedCommunitySummary!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
+type PublishedCommunityPost {
+  bodyMarkdown: String!
+  id: ID!
+  publicDisplayName: String!
+  publishedAt: String!
+  title: String!
+  updatedAt: String!
+}
+
+type PublishedCommunitySummary {
+  id: ID!
+  publicDisplayName: String!
+  publishedAt: String!
+  title: String!
+  updatedAt: String!
 }
 
 type PublishedHelpEntry {
@@ -194,13 +286,19 @@ type PublishedHelpSummary {
 
 type Query {
   adminAccounts(input: AccountsInput!): AccountPage!
+  adminCommunityPost(id: ID!): ManagedCommunityPost!
+  adminCommunityPosts(input: ManagedCommunityPostsInput!): ManagedCommunityPage!
   adminDevices(input: AdminDevicesInput!): DevicePage!
   adminHelpEntries(input: AdminHelpEntriesInput!): AdminHelpPage!
   adminHelpEntry(id: ID!): AdminHelpEntry!
+  communityPost(id: ID!): PublishedCommunityPost!
+  communityPosts(input: CommunityPostsInput!): PublishedCommunityPage!
   currentAccount: Account!
   currentDevice: EnrolledDevice
   helpEntries(input: HelpEntriesInput!): PublishedHelpPage!
   helpEntry(id: ID!): PublishedHelpEntry!
+  myCommunityPost(id: ID!): ManagedCommunityPost!
+  myCommunityPosts(input: ManagedCommunityPostsInput!): ManagedCommunityPage!
   myDevices(input: DevicesInput!): DevicePage!
 }
 
@@ -216,6 +314,15 @@ input UpdateAccountAccessInput {
   id: ID!
   role: AccountRole
   status: AccountState
+}
+
+input UpdateCommunityPostInput {
+  bodyMarkdown: String
+  expectedRevision: Int!
+  id: ID!
+  publicDisplayName: String
+  state: CommunityState
+  title: String
 }
 
 input UpdateHelpEntryInput {

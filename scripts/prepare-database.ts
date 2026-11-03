@@ -1,3 +1,4 @@
+import { CommunitySchemaService } from '../src/modules/community/community-schema.service';
 import { HelpSchemaService } from '../src/modules/help-center/help-schema.service';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
@@ -18,6 +19,7 @@ async function main() {
     await app.get(AdminPolicyService).prepare();
     await app.get(DeviceSchemaService).prepare();
     await app.get(HelpSchemaService).prepare();
+    await app.get(CommunitySchemaService).prepare();
     console.log(
       'Platform collections, indexes and administrator policy are prepared. No accounts were created or indexes dropped.',
     );

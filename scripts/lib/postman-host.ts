@@ -1,3 +1,4 @@
+import { CommunitySchemaService } from '../../src/modules/community/community-schema.service';
 import { HelpSchemaService } from '../../src/modules/help-center/help-schema.service';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
@@ -63,6 +64,7 @@ export async function createPostmanTestHost() {
     await app.get(AdminPolicyService).prepare();
     await app.get(DeviceSchemaService).prepare();
     await app.get(HelpSchemaService).prepare();
+    await app.get(CommunitySchemaService).prepare();
     const testRunId = name.slice('sbt_'.length);
     // Synthetic fixture only, after proving this exact disposable DB was empty.
     // Collection scripts derive these credentials in runtime variables; no real admin.

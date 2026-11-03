@@ -47,7 +47,7 @@ Use current compatible supported releases and pin tested dependency versions. Fo
 | Selected frame for connected AI | Device owns original; temporary transmitted copy | RAM-only processing, if user enables connected analysis |
 | User/account/login/device enrollment | Token in platform secure storage | MongoDB, containing no lecture content |
 | FAQs/announcements | Optional read cache | Published platform content in MongoDB |
-| Community posts/comments | Optional read cache | Only intentionally published general community content |
+| Community posts/comments | Optional public read cache | Deliberately saved general community drafts and published text; comments planned |
 
 “No server storage” is different from “nothing leaves the phone.” Connected Python analysis sends selected frames to our first-party service temporarily. Before enabling it, explain this in the UI. No full video or audio upload is necessary. Disable connected analysis when the user declines; local recording and manual capture still work.
 
@@ -129,7 +129,8 @@ Allowed collections:
 - devices: account, enrollment label/type, revocation and account-related last activity; no recording paths or lecture titles.
 - pairingRequests: expiring hashed single-use enrollment codes, without lecture content.
 - helpEntries: FAQ/announcement, title, Markdown body, topic, draft/published/archived state, display order, revision, author/editor and timestamps. Archive/restore replaces permanent removal for this surface.
-- communityPosts/communityComments: explicitly published text, author and moderation state.
+- communityPosts: intentionally entered general text, owner ID, chosen public display name, DRAFT/PUBLISHED/REMOVED state, revision, publication/removal metadata and timestamps. Server-saved drafts are disclosed and administrator-readable; withdrawal/removal retain text.
+- communityComments: planned intentionally published comments and moderation state.
 - reports: community/platform report, reason and moderation outcome.
 - auditEvents: administrator/account actions without lecture payloads or recording-derived content.
 - platformSettings: enrollment/auth/content settings and non-content processing limits.
@@ -154,7 +155,7 @@ MongoDB/filesystem backups contain only platform data, approved static branding 
 - Admin has no “view all recordings,” “download user lecture,” or “clear phone storage” API.
 - Recovery is an admin-assisted reset/local recovery CLI until real email delivery is implemented.
 
-Public community publishing is a separate intentional action. V1 accepts general text posts/comments and does not support recorded-lecture attachments, automatic transcript publication or “share lecture to community.”
+Public community publishing is a separate intentional action. Community posts V1 accepts general text posts; comments/reports remain planned. It does not support recorded-lecture attachments, automatic transcript publication or “share lecture to community.”
 
 ## 7. RAM-only connected analysis contract
 
@@ -208,7 +209,7 @@ Both plan documents use these routes:
 
 There is no public media library, lecture-sync endpoint, recording database API or full-video upload endpoint.
 
-Published [Help](../contracts/help-center.md) is now implemented as the first B5 content increment, with credential-free reader queries and audited administrator draft/publication/archive management. Community remains planned.
+Published [Help](../contracts/help-center.md) is now implemented as the first B5 content increment, with credential-free reader queries and audited administrator draft/publication/archive management. Community [posts V1](../contracts/community.md) now add deliberate server drafts, author publication/withdrawal and administrator removal/restore-to-draft. Comments and reports remain planned.
 
 GraphQL lists return { items, page, pageSize, total }. Expose stable errors: UNAUTHENTICATED, FORBIDDEN, VALIDATION_ERROR, DEVICE_REVOKED, ANALYSIS_BUSY and VISION_UNAVAILABLE. DEVICE_STORAGE_FULL and LOCAL_SAVE_FAILED are local frontend errors, not claims that our server saves the files.
 

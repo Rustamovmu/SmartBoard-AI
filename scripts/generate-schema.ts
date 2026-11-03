@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { CommunityResolver } from '../src/modules/community/community.resolver';
 import { HelpResolver } from '../src/modules/help-center/help.resolver';
 import { NestFactory } from '@nestjs/core';
 import {
@@ -19,7 +20,12 @@ async function main() {
   try {
     const schema = await app
       .get(GraphQLSchemaFactory)
-      .create([AdminResolver, DeviceEnrollmentResolver, HelpResolver]);
+      .create([
+        AdminResolver,
+        DeviceEnrollmentResolver,
+        HelpResolver,
+        CommunityResolver,
+      ]);
     await writeFile(
       'contracts/schema.graphql',
       `${printSchema(lexicographicSortSchema(schema))}\n`,

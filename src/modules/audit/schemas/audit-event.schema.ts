@@ -20,6 +20,7 @@ export class AuditEvent {
       'PASSWORD_RECOVERY_ISSUED',
       'PASSWORD_RESET',
       'HELP_ENTRY_CHANGED',
+      'COMMUNITY_POST_CHANGED',
     ],
     required: true,
   })
@@ -45,7 +46,9 @@ export class AuditEvent {
   @Prop({
     type: String,
     required: function (this: AuditEvent) {
-      return this.action !== 'HELP_ENTRY_CHANGED';
+      return !['HELP_ENTRY_CHANGED', 'COMMUNITY_POST_CHANGED'].includes(
+        this.action,
+      );
     },
   })
   subjectUserId?: string;
@@ -61,6 +64,25 @@ export class AuditEvent {
   @Prop({ type: String, enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'] })
   nextHelpState?: string;
   @Prop({ type: Number }) helpRevision?: number;
+  @Prop({
+    type: String,
+    required: function (this: AuditEvent) {
+      return this.action === 'COMMUNITY_POST_CHANGED';
+    },
+  })
+  subjectCommunityPostId?: string;
+  @Prop({ type: String, enum: ['CREATE', 'UPDATE', 'REMOVE', 'RESTORE'] })
+  communityAction?: string;
+  @Prop({ type: String, enum: ['DRAFT', 'PUBLISHED', 'REMOVED'] })
+  previousCommunityState?: string;
+  @Prop({ type: String, enum: ['DRAFT', 'PUBLISHED', 'REMOVED'] })
+  nextCommunityState?: string;
+  @Prop({ type: Number }) communityRevision?: number;
+  @Prop({
+    type: String,
+    enum: ['SPAM', 'ABUSE', 'PRIVACY', 'OFF_TOPIC', 'OTHER'],
+  })
+  communityReason?: string;
   @Prop({ required: true })
   createdAt: Date;
 }

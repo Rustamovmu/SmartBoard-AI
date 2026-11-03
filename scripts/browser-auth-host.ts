@@ -1,3 +1,4 @@
+import { CommunitySchemaService } from '../src/modules/community/community-schema.service';
 import { HelpSchemaService } from '../src/modules/help-center/help-schema.service';
 // Test-only IPC host. Never imported by AppModule or exposed as an HTTP route.
 import 'reflect-metadata';
@@ -77,6 +78,7 @@ async function main() {
     await app.get(AdminPolicyService).prepare();
     await app.get(DeviceSchemaService).prepare();
     await app.get(HelpSchemaService).prepare();
+    await app.get(CommunitySchemaService).prepare();
     // Explicit browser-admin mode only. Seed through services after proving
     // ownership/initial emptiness; never accept caller-selected fixture details.
     const adminFixture: { id: string; email: string; name: string }[] = [];
@@ -129,7 +131,8 @@ async function main() {
         ...(adminFixture.length ? { adminFixture } : {}),
       });
     timeout = setTimeout(finish, 15 * 60_000);
-    // A private parent-process channel can expire/block synthetic fixtures.
+    // A private parent-process channel can expire/block synthetic fixtures or
+    // temporarily remove/restore one fixed community index for outage checks.
     // It accepts opaque IDs only, checks the exact DB each time, and cannot
     // issue credentials, select another DB or operate on application records.
     process.on(
@@ -156,6 +159,18 @@ async function main() {
               .updateOne({ _id: message.userId } as never, {
                 $set: { status: 'BLOCKED' },
               });
+          } else if (
+            message.kind === 'community-index-unavailable' &&
+            process.env.BROWSER_TEST_ADMIN === '1'
+          ) {
+            await connection
+              .collection('communityPosts')
+              .dropIndex('state_1_publishedAt_-1__id_1');
+          } else if (
+            message.kind === 'community-index-prepare' &&
+            process.env.BROWSER_TEST_ADMIN === '1'
+          ) {
+            await app.get(CommunitySchemaService).prepare();
           } else throw new Error('Unknown fixture command.');
           if (process.connected)
             process.send?.({ kind: 'done', id: message.id });
