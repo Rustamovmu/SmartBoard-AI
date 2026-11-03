@@ -12,6 +12,8 @@ import { AuthSchemaService } from '../src/modules/auth/auth-schema.service';
 import { AuditService } from '../src/modules/audit/audit.service';
 import { AdminPolicyService } from '../src/modules/admin/admin-policy.service';
 import { DeviceSchemaService } from '../src/modules/device-enrollment/device-schema.service';
+import { MembersService } from '../src/modules/members/members.service';
+import { PasswordService } from '../src/modules/auth/password.service';
 import {
   assertExactTestDatabase,
   assertInitiallyEmpty,
@@ -73,6 +75,44 @@ async function main() {
     await app.get(AuditService).prepare();
     await app.get(AdminPolicyService).prepare();
     await app.get(DeviceSchemaService).prepare();
+    // Explicit browser-admin mode only. Seed through services after proving
+    // ownership/initial emptiness; never accept caller-selected fixture details.
+    const adminFixture: { id: string; email: string; name: string }[] = [];
+    if (process.env.BROWSER_TEST_ADMIN === '1') {
+      assertExactTestDatabase(connection, name);
+      const marker = name.slice('sbt_'.length);
+      const passwordHash = await app
+        .get(PasswordService)
+        .hash(`Synthetic-admin-${marker}`);
+      await connection.transaction(async (session) => {
+        adminFixture.length = 0;
+        await app.get(AdminPolicyService).acquire(session);
+        for (let index = 0; index < 26; index++) {
+          const role = index < 2 ? 'ADMIN' : 'USER';
+          const user = await app.get(MembersService).create(
+            {
+              email: `admin-web-${marker}-${index}@example.test`,
+              name:
+                index < 2
+                  ? `Synthetic Administrator ${index + 1}`
+                  : `Synthetic Member ${String(index).padStart(2, '0')}`,
+              passwordHash,
+            },
+            role,
+            session,
+          );
+          if (role === 'ADMIN')
+            await app
+              .get(AuditService)
+              .administratorBootstrapped(user._id, session);
+          adminFixture.push({
+            id: user._id,
+            email: user.email,
+            name: user.name,
+          });
+        }
+      });
+    }
     configureApplication(app);
     await app.listen(0, '127.0.0.1');
     const port = (app.getHttpServer().address() as { port: number }).port;
@@ -84,6 +124,7 @@ async function main() {
             ? `http://127.0.0.1:${port}`
             : `https://localhost:${port}`,
         database: name,
+        ...(adminFixture.length ? { adminFixture } : {}),
       });
     timeout = setTimeout(finish, 15 * 60_000);
     // A private parent-process channel can expire/block synthetic fixtures.

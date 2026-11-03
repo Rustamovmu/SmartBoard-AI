@@ -288,6 +288,8 @@ Stable server errors: UNAUTHENTICATED, FORBIDDEN, VALIDATION_ERROR, DEVICE_REVOK
 | F5 Exports/imports | Local PDF, Files/Photos integration and local backup bundles. | Export actual bytes; import bundle onto another selected device without our server. |
 | F6 Production readiness | Permissions, privacy checks, native signing/builds, browser fallback and real-device QA. | Record results for actual Android/iPhone devices; do not substitute desktop emulation. |
 
+Current web track: F3 is in progress. Website authentication and administrator account management are implemented in the separate Pages Router repository; see its [dated verification record](../../smartbord-ai-frontend-web/docs/Verification.md) for actual browser evidence. Account management includes filtered pagination, confirmed block/unblock and USER/ADMIN changes, session revocation and backend last-admin protection. Help/FAQ and community remain subsequent F3 increments. This does not complete the earlier B3/F1 physical-phone capture/restart/backend-unavailable reopen proof; phone setup remains deferred and that acceptance is incomplete.
+
 Test filesystem write/finalize failures, SQLite/file reconciliation, duplicate candidates, local deletion, gallery permissions, interrupted recordings, no-network capture/playback, app restart, logout/account blocking without file loss, import/export integrity and actual free-space handling.
 
 Verify users can find saved originals/exports in the documented app/native destination. Test uninstall behavior separately for app-owned and exported media. The UI must distinguish “saved in app,” “saved to Photos/Files,” “analysis pending,” “analysis unavailable” and “save failed.”
