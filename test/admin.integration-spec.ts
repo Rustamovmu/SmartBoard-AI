@@ -501,16 +501,17 @@ describe('GraphQL administrator policies with disposable MongoDB', () => {
 
   it('rate-limits GraphQL requests and keeps only allowed platform collections', async () => {
     const user = await fixture('USER');
-    const key = digest(
-      `graphql:ip:127.0.0.1:${Math.floor(Date.now() / 60000)}`,
-    );
-    await connection
-      .db!.collection('authAttempts')
-      .updateOne(
-        { _id: key as never },
-        { $set: { count: 60, expiresAt: new Date(Date.now() + 120000) } },
-        { upsert: true },
-      );
+    const minute = Math.floor(Date.now() / 60000);
+    assertExactTestDatabase(connection, name);
+    // Setup and the HTTP request may straddle a real minute boundary.
+    for (const bucket of [minute, minute + 1])
+      await connection
+        .db!.collection('authAttempts')
+        .updateOne(
+          { _id: digest(`graphql:ip:127.0.0.1:${bucket}`) as never },
+          { $set: { count: 60, expiresAt: new Date(Date.now() + 180000) } },
+          { upsert: true },
+        );
     expect(
       errorCode(await gql(user.accessToken, currentQuery).expect(429)),
     ).toBe('RATE_LIMITED');
