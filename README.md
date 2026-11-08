@@ -31,6 +31,8 @@ npm run start:prod
 
 Configure the dedicated `SmartBoardAI` database first in ignored `.env`: `MONGODB_URI`, or the existing `MONGO_DEV` key in development. Production requires `MONGODB_URI` and explicit `AUTH_BROWSER_ORIGINS`. See [.env.example](.env.example), [database setup](docs/Database_setup.md) and [authentication contract](contracts/authentication.md). Preserve actual credentials outside Git/chat.
 
+Application schema preparation was completed on 2026-11-08 for all eleven platform collections, including Help, posts, comments and reports. Their read-only schema checks passed, and public/anonymous local HTTPS website smoke checks passed. The known unexpected empty collection remains preserved, so `db:check` still exits 1 for that policy finding. No real administrator or content was seeded; see [dated setup evidence](docs/Database_setup.md#2026-11-08--application-helpcommunitydiscussion-preparation).
+
 The npm start variants and operational database/admin commands load `.env` if present; existing process environment wins. `db:prepare` explicitly creates allowed platform collections/indexes and the singleton administrator policy, preserving existing records/indexes. Auth fails closed until its unique-email and TTL indexes exist. No command bootstraps an administrator automatically. `admin:create` requires explicit operator details; see the authentication contract for secure input.
 
 `PORT` must be 1–65535, `HOST` an IP address or `localhost`, and `NODE_ENV` development/test/production. The source fallback remains `127.0.0.1:3000` when PORT is unset. For the separate website's normal development flow, save these non-secret settings in the existing ignored backend `.env`, preserving its credentials:

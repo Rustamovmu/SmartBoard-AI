@@ -579,3 +579,15 @@ src/modules/reports/reports.service.ts
 src/modules/reports/schemas/report.schema.ts
 test/discussion.integration-spec.ts
 ```
+
+## 2026-11-08 — Application schema preparation and local website smoke check
+
+Completed the explicitly authorized application preparation after the comments/reports feature commits. The pre-check found `SmartBoardAI` reachable/transaction-capable with 8 collections, including the known unexpected empty collection. `npm run db:prepare` passed, additively preparing all eleven platform collections/indexes without account/content seeds, administrator bootstrap, record overwrites or index/data deletion. Existing administrator policy revision and ignored environment settings were preserved.
+
+Read-only assertions passed for authentication, recovery, enrollment, Help, community posts, comments and reports. Index totals including `_id`: helpEntries 6, communityPosts 6, communityComments 7, reports 6. The post-check found 12 total collections, 1 unexpected collection and 0 unexpected nonempty collections. Its exit 1 still represents the preserved empty policy finding, not a setup failure or clean policy pass. The first sandbox DB check failed; the permitted network rerun succeeded in reaching the database. All owned application contexts/connections closed.
+
+Strict-HTTPS Chromium smoke verification passed against the existing local project hosts: liveness/readiness 200; public FAQ/announcement/community pages 200 with expected headings; public Help/post GraphQL success; valid missing-parent comments NOT_FOUND; public report access 401; no public credentials/cookies; and four anonymous owner/admin comment/report routes redirecting to login. No actual account or content fixture was created/changed; ordinary request rate-limit metadata is part of these real reads. This verifies public serving and anonymous protection after application setup, not authenticated publishing against application records.
+
+The initial temporary-host smoke attempt exited at its port preflight because existing project hosts already occupied 3000/4000/4001. No task listener started. Read-only working-directory inspection confirmed their project ownership; the successful check reused them without stopping or modifying their owners. The owned browser closed. Existing localhost certificates/trust and unrelated processes were preserved. See [database setup evidence](Database_setup.md) for exact scope and observations.
+
+Changed files: `AGENTS.md`, `README.md`, `docs/Database_setup.md`, `docs/Development_progress.md`. This task changes operational records only; no source, dependency, schema contract or website file changed. Documentation path/link/diff/whitespace and staged artifact review are required before the focused local commit. Earlier implementation validation remains historical and was not rerun as if application tests were needed for this documentation update. Physical-phone proof, real-account manual publishing, production deployment, existing dependency advisories and the empty policy finding remain outside this acceptance.
