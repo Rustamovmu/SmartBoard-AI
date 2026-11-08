@@ -10,6 +10,24 @@ export class AuditService {
   constructor(
     @InjectModel(AUDIT_MODEL) private readonly events: Model<AuditEvent>,
   ) {}
+  async usernameSet(
+    actor: { _id: string; role: MemberRole },
+    session: ClientSession,
+  ) {
+    await this.events.create(
+      [
+        {
+          _id: randomUUID(),
+          action: 'USERNAME_SET',
+          actorType: actor.role,
+          actorUserId: actor._id,
+          subjectUserId: actor._id,
+          createdAt: new Date(),
+        },
+      ],
+      { session },
+    );
+  }
   async discussionChanged(
     kind: 'COMMENT' | 'REPORT',
     actor: { _id: string; role: MemberRole },

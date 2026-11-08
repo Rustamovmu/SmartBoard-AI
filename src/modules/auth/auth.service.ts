@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { isEmail } from 'class-validator';
+import { USERNAME_PATTERN } from '../../contracts/username-v1';
 import { InjectConnection } from '@nestjs/mongoose';
 import type { Connection } from 'mongoose';
 import type { AuthTransport } from '../../contracts/auth-v1';
@@ -6,6 +12,7 @@ import { MembersService } from '../members/members.service';
 import { AuthSessionService } from './auth-session.service';
 import { PasswordService } from './password.service';
 import type { SignupDto, LoginDto } from './dto/auth.dto';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 
 @Injectable()
 export class AuthService {
@@ -14,13 +21,19 @@ export class AuthService {
     private readonly members: MembersService,
     private readonly passwords: PasswordService,
     private readonly sessions: AuthSessionService,
+    private readonly limits: AuthRateLimitService,
   ) {}
 
   async signup(input: SignupDto, transport: AuthTransport) {
     const passwordHash = await this.passwords.hash(input.password);
     return this.connection.transaction(async (transaction) => {
       const user = await this.members.create(
-        { email: input.email, name: input.name, passwordHash },
+        {
+          email: input.email,
+          name: input.name,
+          passwordHash,
+          username: input.username,
+        },
         'USER',
         transaction,
       );
@@ -29,7 +42,22 @@ export class AuthService {
   }
 
   async login(input: LoginDto, transport: AuthTransport) {
-    const user = await this.members.findCredentials(input.email);
+    if ((input.email === undefined) === (input.identifier === undefined))
+      throw new BadRequestException();
+    const identifier = input.identifier ?? input.email!;
+    if (
+      identifier.includes('@')
+        ? !isEmail(identifier)
+        : !USERNAME_PATTERN.test(identifier)
+    )
+      throw new BadRequestException();
+    const user = await this.members.findCredentials(identifier);
+    // Email and username aliases for the same account cannot multiply its budget.
+    await this.limits.consume(
+      'login:account',
+      user ? `user:${user._id}` : `identifier:${identifier}`,
+      5,
+    );
     const valid = await this.passwords.verify(
       input.password,
       user?.passwordHash,

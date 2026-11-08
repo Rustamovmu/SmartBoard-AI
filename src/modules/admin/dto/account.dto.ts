@@ -25,6 +25,7 @@ registerEnumType(AccountState, { name: 'AccountState' });
 export class Account implements PublicMember {
   @Field(() => ID) id: string;
   @Field() email: string;
+  @Field(() => String, { nullable: true }) username: string | null;
   @Field() name: string;
   @Field(() => AccountRole) role: PublicMember['role'];
   @Field(() => AccountState) status: PublicMember['status'];

@@ -1,3 +1,4 @@
+import { UsernameResolver } from '../src/modules/members/username.resolver';
 import { CommentResolver } from '../src/modules/community/comment.resolver';
 import { ReportsResolver } from '../src/modules/reports/reports.resolver';
 import 'reflect-metadata';
@@ -29,6 +30,7 @@ async function main() {
         CommunityResolver,
         CommentResolver,
         ReportsResolver,
+        UsernameResolver,
       ]);
     await writeFile(
       'contracts/schema.graphql',

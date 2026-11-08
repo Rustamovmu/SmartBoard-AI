@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import type { AccountStatus, MemberRole } from '../../../contracts/auth-v1';
+import { USERNAME_PATTERN } from '../../../contracts/username-v1';
 
 export const MEMBER_MODEL = 'PlatformMember';
 
@@ -16,6 +17,9 @@ export class Member {
 
   @Prop({ required: true, maxlength: 254 })
   email: string;
+
+  @Prop({ type: String, maxlength: 30, match: USERNAME_PATTERN })
+  username?: string;
 
   @Prop({ required: true, maxlength: 80 })
   name: string;
@@ -57,6 +61,11 @@ export const MemberSchema = SchemaFactory.createForClass(Member);
 MemberSchema.index(
   { email: 1 },
   { unique: true, name: 'unique_normalized_email' },
+);
+// Legacy accounts have no username until their authenticated owner chooses one.
+MemberSchema.index(
+  { username: 1 },
+  { unique: true, sparse: true, name: 'unique_normalized_username' },
 );
 // Sparse: normal accounts have no recovery credential. Never TTL-index users.
 MemberSchema.index(

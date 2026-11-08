@@ -17,7 +17,6 @@ import {
   AuthTransportService,
   type AuthRequest,
 } from './auth-transport.service';
-import { AuthRateLimitService } from './auth-rate-limit.service';
 import {
   LoginDto,
   RefreshDto,
@@ -39,7 +38,6 @@ export class AuthController {
     private readonly sessions: AuthSessionService,
     private readonly transport: AuthTransportService,
     private readonly members: MembersService,
-    private readonly limits: AuthRateLimitService,
     private readonly recovery: PasswordRecoveryService,
   ) {}
 
@@ -73,7 +71,6 @@ export class AuthController {
     @Req() request: AuthRequest,
     @Res({ passthrough: true }) response: Response,
   ) {
-    await this.limits.consume('login:account', input.email, 5);
     const grant = await this.auth.login(input, request.authTransport);
     return this.transport.respond(
       grant,

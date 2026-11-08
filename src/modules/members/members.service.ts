@@ -1,9 +1,17 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { randomUUID } from 'node:crypto';
 import type { ClientSession, Model } from 'mongoose';
 import type { MemberRole, PublicMember } from '../../contracts/auth-v1';
 import { MEMBER_MODEL, Member } from './schemas/member.schema';
+import {
+  normalizeUsername,
+  USERNAME_PATTERN,
+} from '../../contracts/username-v1';
 
 @Injectable()
 export class MembersService {
@@ -12,16 +20,28 @@ export class MembersService {
   ) {}
 
   async create(
-    input: { email: string; name: string; passwordHash: string },
+    input: {
+      email: string;
+      name: string;
+      passwordHash: string;
+      username?: string;
+    },
     role: MemberRole,
     session: ClientSession,
   ) {
+    const username =
+      input.username === undefined
+        ? undefined
+        : normalizeUsername(input.username);
+    if (username !== undefined && !USERNAME_PATTERN.test(username))
+      throw new BadRequestException();
     try {
       const [member] = await this.members.create(
         [
           {
             _id: randomUUID(),
             email: input.email,
+            ...(username === undefined ? {} : { username }),
             name: input.name,
             passwordHash: input.passwordHash,
             role,
@@ -45,9 +65,13 @@ export class MembersService {
     }
   }
 
-  findCredentials(email: string) {
+  findCredentials(identifier: string) {
     return this.members
-      .findOne({ email })
+      .findOne(
+        identifier.includes('@')
+          ? { email: identifier }
+          : { username: identifier },
+      )
       .select('+passwordHash +authVersion')
       .lean()
       .exec();
@@ -66,6 +90,7 @@ export class MembersService {
     return {
       id: member._id,
       email: member.email,
+      username: member.username ?? null,
       name: member.name,
       role: member.role,
       status: member.status,

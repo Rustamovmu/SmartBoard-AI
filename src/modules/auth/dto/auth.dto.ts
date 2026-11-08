@@ -1,3 +1,4 @@
+import { USERNAME_PATTERN } from '../../../contracts/username-v1';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
@@ -6,9 +7,32 @@ import {
   Length,
   MaxLength,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 
 export class LoginDto {
+  @ValidateIf((_o, v) => v !== undefined)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @IsEmail()
+  @MaxLength(254)
+  email?: string;
+
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @ValidateIf((_o, v) => v !== undefined)
+  @IsString()
+  @Length(1, 254)
+  identifier?: string;
+
+  @IsString()
+  @Length(1, 128)
+  password: string;
+}
+
+export class SignupDto {
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim().toLowerCase() : value,
   )
@@ -16,15 +40,17 @@ export class LoginDto {
   @MaxLength(254)
   email: string;
 
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
+  @ValidateIf((_o, v) => v !== undefined)
   @IsString()
-  @Length(1, 128)
-  password: string;
-}
+  @Matches(USERNAME_PATTERN)
+  username?: string;
 
-export class SignupDto extends LoginDto {
   @IsString()
   @Length(12, 128)
-  declare password: string;
+  password: string;
 
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,

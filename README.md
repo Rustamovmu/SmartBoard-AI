@@ -8,7 +8,7 @@ Follow [AGENTS.md](AGENTS.md), [backend plan](docs/Backend_plan.md) and [fronten
 
 - Root-level `src/`, Node.js 24, npm and committed lockfile; default `127.0.0.1:3000`.
 - `GET /` starter compatibility; live/readiness health routes with database/topology/auth-index checks.
-- HTTP signup/login/refresh/logout/me/CSRF with strict DTOs and an 8 KiB JSON body limit.
+- HTTP signup/login/refresh/logout/me/CSRF with strict DTOs and an 8 KiB JSON body limit. [Username login](contracts/usernames.md) supports username or email; existing owners choose a username once on the website Account page.
 - Argon2id passwords; hashed opaque access/refresh credentials; 15-minute access and rotating sessions capped at 30 days.
 - Separate browser Secure/HttpOnly/SameSite cookies and native credential transport, with origin/CSRF checks and MongoDB rate limits.
 - Current account/session/status checks and an administrator guard. Public signup creates USER only.
@@ -33,7 +33,7 @@ Configure the dedicated `SmartBoardAI` database first in ignored `.env`: `MONGOD
 
 Application schema preparation was completed on 2026-11-08 for all eleven platform collections, including Help, posts, comments and reports. Their read-only schema checks passed, and public/anonymous local HTTPS website smoke checks passed. The known unexpected empty collection remains preserved, so `db:check` still exits 1 for that policy finding. No real administrator or content was seeded; see [dated setup evidence](docs/Database_setup.md#2026-11-08--application-helpcommunitydiscussion-preparation).
 
-The npm start variants and operational database/admin commands load `.env` if present; existing process environment wins. `db:prepare` explicitly creates allowed platform collections/indexes and the singleton administrator policy, preserving existing records/indexes. Auth fails closed until its unique-email and TTL indexes exist. No command bootstraps an administrator automatically. `admin:create` requires explicit operator details; see the authentication contract for secure input.
+The npm start variants and operational database/admin commands load `.env` if present; existing process environment wins. `db:prepare` explicitly creates allowed platform collections/indexes and the singleton administrator policy, preserving existing records/indexes. Auth fails closed until its unique-email, unique-sparse-username and TTL indexes exist. No command bootstraps an administrator automatically. `admin:create` requires explicit operator details; see the authentication contract for secure input.
 
 `PORT` must be 1–65535, `HOST` an IP address or `localhost`, and `NODE_ENV` development/test/production. The source fallback remains `127.0.0.1:3000` when PORT is unset. For the separate website's normal development flow, save these non-secret settings in the existing ignored backend `.env`, preserving its credentials:
 

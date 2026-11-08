@@ -5,6 +5,7 @@ type Account {
   name: String!
   role: AccountRole!
   status: AccountState!
+  username: String
 }
 
 type AccountPage {
@@ -313,6 +314,7 @@ type Mutation {
   createDevicePairing(input: CreateDevicePairingInput!): DevicePairing!
   revokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
   revokeDevices(input: RevokeDevicesInput!): DevicePage!
+  setMyUsername(input: SetMyUsernameInput!): Account!
   updateCommunityComment(input: UpdateCommunityCommentInput!): ManagedCommunityComment!
   updateCommunityPost(input: UpdateCommunityPostInput!): ManagedCommunityPost!
 }
@@ -433,6 +435,10 @@ input RevokeDeviceInput {
 
 input RevokeDevicesInput {
   ids: [ID!]!
+}
+
+input SetMyUsernameInput {
+  username: String!
 }
 
 input UpdateAccountAccessInput {

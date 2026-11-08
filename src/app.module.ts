@@ -1,3 +1,4 @@
+import { UsernameModule } from './modules/members/username.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { BadRequestException, Module, ValidationPipe } from '@nestjs/common';
 import { CommunityModule } from './modules/community/community.module';
@@ -28,6 +29,7 @@ import { DeviceEnrollmentModule } from './modules/device-enrollment/device-enrol
     HelpModule,
     CommunityModule,
     ReportsModule,
+    UsernameModule,
   ],
   controllers: [AppController],
   providers: [

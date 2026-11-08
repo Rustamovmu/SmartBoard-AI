@@ -5,6 +5,7 @@ export type AuthTransport = 'browser' | 'native';
 export interface PublicMember {
   id: string;
   email: string;
+  username: string | null;
   name: string;
   role: MemberRole;
   status: AccountStatus;

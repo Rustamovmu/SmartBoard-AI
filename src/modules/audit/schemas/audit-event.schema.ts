@@ -15,6 +15,7 @@ export class AuditEvent {
     enum: [
       'ADMIN_BOOTSTRAPPED',
       'ACCOUNT_ACCESS_CHANGED',
+      'USERNAME_SET',
       'DEVICE_ENROLLED',
       'DEVICE_REVOKED',
       'PASSWORD_RECOVERY_ISSUED',

@@ -29,6 +29,14 @@ export class AuthSchemaService {
             index.key.email === 1 &&
             Object.keys(index.key).length === 1,
         ) ||
+        !users.some(
+          (index) =>
+            index.unique === true &&
+            index.sparse === true &&
+            index.partialFilterExpression === undefined &&
+            index.key.username === 1 &&
+            Object.keys(index.key).length === 1,
+        ) ||
         !sessions.some(
           (index) =>
             index.key.expiresAt === 1 && index.expireAfterSeconds === 0,

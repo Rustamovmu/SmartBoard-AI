@@ -123,7 +123,7 @@ There are deliberately no server lecture/media/upload/export-archive modules. Do
 
 Allowed collections:
 
-- users: normalized unique email, name, password hash, USER/ADMIN role, account status and timestamps.
+- users: normalized unique email, a separate unique normalized username (nullable for legacy accounts until chosen), name, password hash, USER/ADMIN role, account status and timestamps.
 - authSessions: hashed refresh credentials, expiry, rotation family and revocation.
 - authAttempts: expiring rate-limit records.
 - devices: account, enrollment label/type, revocation and account-related last activity; no recording paths or lecture titles.
@@ -137,11 +137,13 @@ Allowed collections:
 
 Forbidden collections/fields include lectures, recordings, captures, thumbnails, baselines, OCR text, media URLs, private note text, frame bytes and private per-lecture processing history.
 
-Index unique email; paginate lists; index publication/status/date queries; expire temporary token/rate records. Keep platform IDs separate from device-local lecture/capture UUIDs. The backend does not need the local lecture UUID to perform a frame analysis: use an ephemeral random stream ID.
+Index unique email and sparse unique username; paginate lists; index publication/status/date queries; expire temporary token/rate records. Keep platform IDs separate from device-local lecture/capture UUIDs. The backend does not need the local lecture UUID to perform a frame analysis: use an ephemeral random stream ID.
 
 MongoDB/filesystem backups contain only platform data, approved static branding and model/configuration files. They must not accidentally scoop up development lecture folders or production worker memory dumps.
 
 ## 6. Authentication and admin authority
+
+The latest username requirement is implemented as [username-or-email login](../contracts/usernames.md), required website-signup usernames and one-time owner choice for legacy accounts. HTTP signup remains compatible with older clients that omit username; no existing-account backfill occurs. Use the dated verification record for evidence.
 
 - Public signup creates USER accounts only. Bootstrap ADMIN through a local explicit CLI; no default credentials or “first registrant becomes admin.”
 - Access tokens last 15 minutes; refresh sessions have a maximum 30-day lifetime and rotate/revoke server-side.
