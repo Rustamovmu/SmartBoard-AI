@@ -1052,7 +1052,16 @@ describe('device enrollment with guarded disposable MongoDB', () => {
           ids: [second.device.id, third.device.id],
         }),
       ]);
-      expect(results.every((r) => r.body.data?.revokeDevices)).toBe(true);
+      expect(
+        results.map((response) => ({
+          status: response.status,
+          code: error(response),
+          success: !!response.body.data?.revokeDevices,
+        })),
+      ).toEqual([
+        { status: 200, code: undefined, success: true },
+        { status: 200, code: undefined, success: true },
+      ]);
       const timestamps = results.map(
         (r) =>
           r.body.data.revokeDevices.items.find(

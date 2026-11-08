@@ -16,10 +16,11 @@ export class AuthRateLimitService {
       throw new BadRequestException();
     const bucket = Math.floor(Date.now() / 60_000);
     const id = digest(`${scope}:${identity}:${bucket}`);
+    const filter = { _id: id, count: { $lte: maximum - cost } };
     try {
       await this.attempts
         .findOneAndUpdate(
-          { _id: id, count: { $lte: maximum - cost } },
+          filter,
           {
             $inc: { count: cost },
             $setOnInsert: { expiresAt: new Date((bucket + 1) * 60_000) },
@@ -34,6 +35,17 @@ export class AuthRateLimitService {
         'code' in error &&
         error.code === 11000
       ) {
+        // Two first attempts may both try to insert this bucket. A duplicate
+        // insert did not spend budget; try once against the now-existing row.
+        // The same atomic predicate still rejects a genuinely exhausted bucket.
+        const result = await this.attempts
+          .updateOne(
+            filter,
+            { $inc: { count: cost } },
+            { upsert: false, runValidators: true },
+          )
+          .exec();
+        if (result.modifiedCount === 1) return;
         throw new HttpException('Too many requests.', 429);
       }
       throw error;
