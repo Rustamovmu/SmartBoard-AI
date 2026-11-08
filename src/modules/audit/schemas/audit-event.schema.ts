@@ -21,6 +21,8 @@ export class AuditEvent {
       'PASSWORD_RESET',
       'HELP_ENTRY_CHANGED',
       'COMMUNITY_POST_CHANGED',
+      'COMMUNITY_COMMENT_CHANGED',
+      'COMMUNITY_REPORT_CHANGED',
     ],
     required: true,
   })
@@ -46,9 +48,12 @@ export class AuditEvent {
   @Prop({
     type: String,
     required: function (this: AuditEvent) {
-      return !['HELP_ENTRY_CHANGED', 'COMMUNITY_POST_CHANGED'].includes(
-        this.action,
-      );
+      return ![
+        'HELP_ENTRY_CHANGED',
+        'COMMUNITY_POST_CHANGED',
+        'COMMUNITY_COMMENT_CHANGED',
+        'COMMUNITY_REPORT_CHANGED',
+      ].includes(this.action);
     },
   })
   subjectUserId?: string;
@@ -83,6 +88,36 @@ export class AuditEvent {
     enum: ['SPAM', 'ABUSE', 'PRIVACY', 'OFF_TOPIC', 'OTHER'],
   })
   communityReason?: string;
+  @Prop({
+    type: String,
+    required: function (this: AuditEvent) {
+      return this.action === 'COMMUNITY_COMMENT_CHANGED';
+    },
+  })
+  subjectCommunityCommentId?: string;
+  @Prop({
+    type: String,
+    required: function (this: AuditEvent) {
+      return this.action === 'COMMUNITY_REPORT_CHANGED';
+    },
+  })
+  subjectCommunityReportId?: string;
+  @Prop({
+    type: String,
+    enum: ['CREATE', 'UPDATE', 'REMOVE', 'RESTORE', 'REVIEW'],
+  })
+  discussionAction?: string;
+  @Prop({
+    type: String,
+    enum: ['DRAFT', 'PUBLISHED', 'REMOVED', 'OPEN', 'RESOLVED', 'DISMISSED'],
+  })
+  previousDiscussionState?: string;
+  @Prop({
+    type: String,
+    enum: ['DRAFT', 'PUBLISHED', 'REMOVED', 'OPEN', 'RESOLVED', 'DISMISSED'],
+  })
+  nextDiscussionState?: string;
+  @Prop({ type: Number }) discussionRevision?: number;
   @Prop({ required: true })
   createdAt: Date;
 }

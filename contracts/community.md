@@ -1,6 +1,6 @@
 # Community GraphQL contract — version 1
 
-Community is deliberately entered general text, separate from private lectures. V1 implements posts only: no comments, reports, reactions, search, attachments, import, lecture references, revision archive or permanent deletion. The website is the separate Pages Router project; no mobile code changes are required.
+Community is deliberately entered general text, separate from private lectures. The original V1 post surface is documented here; [comments and reports](community-discussion.md) extend it. There are no reactions, search, attachments, import, lecture references, revision archive or permanent deletion. The website is the separate Pages Router project; no mobile code changes are required.
 
 ## Setup and transport
 
@@ -8,9 +8,9 @@ Explicit `npm run db:prepare` prepares `communityPosts` and five indexes for pub
 
 Application/production preparation and deployment are separate operator work. Prepare and verify required indexes using the release's setup tooling **before updating the running backend and website**. The earlier Help rollout likewise still requires its explicit index preparation; implementation/test results do not establish application rollout.
 
-Use `POST /graphql` with `{ "query": "<one operation>", "variables": { ... } }`. Existing limits remain: 64 KiB JSON, 8 KiB UTF-8 document, five roots, 80 AST fields, six selection levels/definitions, no HTTP batching/introspection/persisted queries. Responses are no-store. Public and protected requests share 60/IP/minute; protected requests also use 60/account/minute. Community mutations share 20 service-reached attempts/account/minute across creation, author changes and moderation; validation performed before resolver execution does not consume that write budget.
+Use `POST /graphql` with `{ "query": "<one operation>", "variables": { ... } }`. Existing limits remain: 64 KiB JSON, 8 KiB UTF-8 document, five roots, 80 AST fields, six selection levels/definitions, no HTTP batching/introspection/persisted queries. Responses are no-store. Public and protected requests share 60/IP/minute; protected requests also use 60/account/minute. Community mutations share 20 service-reached attempts/account/minute across posts, comments, report submission/review and moderation; report submission additionally uses 10 attempts/account/minute; validation performed before resolver execution does not consume that write budget.
 
-Public reads use `X-SmartBord-Client: public`, `Content-Type: application/json`, `credentials: omit`, and no Cookie, Authorization or CSRF. Supplied browser origins must exactly match configured HTTPS origins. Public mode issues no cookies/nonces and never refreshes. Its parsed allowlist permits only `helpEntries`, `helpEntry`, `communityPosts`, `communityPost`, including aliases/fragments. Mutations and protected roots, even behind directives, are rejected before execution.
+Public reads use `X-SmartBord-Client: public`, `Content-Type: application/json`, `credentials: omit`, and no Cookie, Authorization or CSRF. Supplied browser origins must exactly match configured HTTPS origins. Public mode issues no cookies/nonces and never refreshes. Its parsed allowlist permits only `helpEntries`, `helpEntry`, `communityPosts`, `communityPost`, `communityComments`, including aliases/fragments. Mutations and protected roots, even behind directives, are rejected before execution.
 
 Protected operations require a current ACTIVE account with the existing browser cookie/CSRF or native bearer transport. See [authentication](authentication.md). Administrators must currently have ADMIN role. Mutations reacquire the shared policy lock and reauthenticate inside their MongoDB transaction, so account blocking/demotion cannot authorize later writes from stale credentials.
 

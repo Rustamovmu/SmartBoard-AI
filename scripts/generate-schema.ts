@@ -1,3 +1,5 @@
+import { CommentResolver } from '../src/modules/community/comment.resolver';
+import { ReportsResolver } from '../src/modules/reports/reports.resolver';
 import 'reflect-metadata';
 import { CommunityResolver } from '../src/modules/community/community.resolver';
 import { HelpResolver } from '../src/modules/help-center/help.resolver';
@@ -25,6 +27,8 @@ async function main() {
         DeviceEnrollmentResolver,
         HelpResolver,
         CommunityResolver,
+        CommentResolver,
+        ReportsResolver,
       ]);
     await writeFile(
       'contracts/schema.graphql',

@@ -1,3 +1,5 @@
+import { CommentSchemaService } from '../src/modules/community/comment-schema.service';
+import { ReportSchemaService } from '../src/modules/reports/report-schema.service';
 import { CommunitySchemaService } from '../src/modules/community/community-schema.service';
 import { HelpSchemaService } from '../src/modules/help-center/help-schema.service';
 import 'reflect-metadata';
@@ -20,6 +22,8 @@ async function main() {
     await app.get(DeviceSchemaService).prepare();
     await app.get(HelpSchemaService).prepare();
     await app.get(CommunitySchemaService).prepare();
+    await app.get(CommentSchemaService).prepare();
+    await app.get(ReportSchemaService).prepare();
     console.log(
       'Platform collections, indexes and administrator policy are prepared. No accounts were created or indexes dropped.',
     );

@@ -57,6 +57,7 @@ export function assertPublicHelpQuery(query: unknown) {
             'helpEntry',
             'communityPosts',
             'communityPost',
+            'communityComments',
           ].includes(node.name.value) ||
           ++roots > 5
         )

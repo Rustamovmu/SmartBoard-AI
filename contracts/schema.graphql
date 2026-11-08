@@ -70,6 +70,12 @@ type AdminHelpPage {
   total: Int!
 }
 
+input CommunityCommentsInput {
+  page: Int! = 1
+  pageSize: Int! = 20
+  postId: ID!
+}
+
 enum CommunityModerationAction {
   REMOVE
   RESTORE
@@ -88,6 +94,32 @@ enum CommunityReason {
   SPAM
 }
 
+type CommunityReport {
+  createdAt: String!
+  id: ID!
+  postId: ID!
+  reason: CommunityReason!
+  revision: Int!
+  state: ReportState!
+  targetId: ID!
+  targetType: ReportTarget!
+  updatedAt: String!
+}
+
+input CommunityReportsInput {
+  page: Int! = 1
+  pageSize: Int! = 20
+  state: ReportState
+  targetType: ReportTarget
+}
+
+type CommunityReportsPage {
+  items: [CommunityReport!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
 enum CommunityState {
   DRAFT
   PUBLISHED
@@ -98,10 +130,22 @@ input ConfirmDevicePairingInput {
   code: String!
 }
 
+input CreateCommunityCommentInput {
+  bodyMarkdown: String!
+  postId: ID!
+  publicDisplayName: String!
+}
+
 input CreateCommunityPostInput {
   bodyMarkdown: String!
   publicDisplayName: String!
   title: String!
+}
+
+input CreateCommunityReportInput {
+  reason: CommunityReason!
+  targetId: ID!
+  targetType: ReportTarget!
 }
 
 input CreateDevicePairingInput {
@@ -182,6 +226,35 @@ enum HelpTopic {
   PRIVACY
 }
 
+type ManagedCommunityComment {
+  authorUserId: ID!
+  bodyMarkdown: String!
+  createdAt: String!
+  id: ID!
+  postId: ID!
+  publicDisplayName: String!
+  publishedAt: String!
+  removalReason: CommunityReason
+  removedAt: String
+  revision: Int!
+  state: CommunityState!
+  updatedAt: String!
+}
+
+input ManagedCommunityCommentsInput {
+  page: Int! = 1
+  pageSize: Int! = 20
+  postId: ID
+  state: CommunityState
+}
+
+type ManagedCommunityCommentsPage {
+  items: [ManagedCommunityComment!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
+}
+
 type ManagedCommunityPage {
   items: [ManagedCommunityPost!]!
   page: Int!
@@ -210,6 +283,13 @@ input ManagedCommunityPostsInput {
   state: CommunityState
 }
 
+input ModerateCommunityCommentInput {
+  action: CommunityModerationAction!
+  expectedRevision: Int!
+  id: ID!
+  reason: CommunityReason
+}
+
 input ModerateCommunityPostInput {
   action: CommunityModerationAction!
   expectedRevision: Int!
@@ -219,17 +299,38 @@ input ModerateCommunityPostInput {
 
 type Mutation {
   adminCreateHelpEntry(input: CreateHelpEntryInput!): AdminHelpEntry!
+  adminModerateCommunityComment(input: ModerateCommunityCommentInput!): ManagedCommunityComment!
   adminModerateCommunityPost(input: ModerateCommunityPostInput!): ManagedCommunityPost!
+  adminReviewCommunityReport(input: ReviewCommunityReportInput!): CommunityReport!
   adminRevokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
   adminRevokeDevices(input: RevokeDevicesInput!): DevicePage!
   adminUpdateAccountAccess(input: UpdateAccountAccessInput!): Account!
   adminUpdateHelpEntry(input: UpdateHelpEntryInput!): AdminHelpEntry!
   confirmDevicePairing(input: ConfirmDevicePairingInput!): EnrolledDevice!
+  createCommunityComment(input: CreateCommunityCommentInput!): ManagedCommunityComment!
   createCommunityPost(input: CreateCommunityPostInput!): ManagedCommunityPost!
+  createCommunityReport(input: CreateCommunityReportInput!): CommunityReport!
   createDevicePairing(input: CreateDevicePairingInput!): DevicePairing!
   revokeDevice(input: RevokeDeviceInput!): EnrolledDevice!
   revokeDevices(input: RevokeDevicesInput!): DevicePage!
+  updateCommunityComment(input: UpdateCommunityCommentInput!): ManagedCommunityComment!
   updateCommunityPost(input: UpdateCommunityPostInput!): ManagedCommunityPost!
+}
+
+type PublishedCommunityComment {
+  bodyMarkdown: String!
+  id: ID!
+  postId: ID!
+  publicDisplayName: String!
+  publishedAt: String!
+  updatedAt: String!
+}
+
+type PublishedCommunityCommentsPage {
+  items: [PublishedCommunityComment!]!
+  page: Int!
+  pageSize: Int!
+  total: Int!
 }
 
 type PublishedCommunityPage {
@@ -286,20 +387,44 @@ type PublishedHelpSummary {
 
 type Query {
   adminAccounts(input: AccountsInput!): AccountPage!
+  adminCommunityComment(id: ID!): ManagedCommunityComment!
+  adminCommunityComments(input: ManagedCommunityCommentsInput!): ManagedCommunityCommentsPage!
   adminCommunityPost(id: ID!): ManagedCommunityPost!
   adminCommunityPosts(input: ManagedCommunityPostsInput!): ManagedCommunityPage!
+  adminCommunityReports(input: CommunityReportsInput!): CommunityReportsPage!
   adminDevices(input: AdminDevicesInput!): DevicePage!
   adminHelpEntries(input: AdminHelpEntriesInput!): AdminHelpPage!
   adminHelpEntry(id: ID!): AdminHelpEntry!
+  communityComments(input: CommunityCommentsInput!): PublishedCommunityCommentsPage!
   communityPost(id: ID!): PublishedCommunityPost!
   communityPosts(input: CommunityPostsInput!): PublishedCommunityPage!
   currentAccount: Account!
   currentDevice: EnrolledDevice
   helpEntries(input: HelpEntriesInput!): PublishedHelpPage!
   helpEntry(id: ID!): PublishedHelpEntry!
+  myCommunityComment(id: ID!): ManagedCommunityComment!
+  myCommunityComments(input: ManagedCommunityCommentsInput!): ManagedCommunityCommentsPage!
   myCommunityPost(id: ID!): ManagedCommunityPost!
   myCommunityPosts(input: ManagedCommunityPostsInput!): ManagedCommunityPage!
+  myCommunityReports(input: CommunityReportsInput!): CommunityReportsPage!
   myDevices(input: DevicesInput!): DevicePage!
+}
+
+enum ReportState {
+  DISMISSED
+  OPEN
+  RESOLVED
+}
+
+enum ReportTarget {
+  COMMENT
+  POST
+}
+
+input ReviewCommunityReportInput {
+  expectedRevision: Int!
+  id: ID!
+  state: ReportState!
 }
 
 input RevokeDeviceInput {
@@ -314,6 +439,14 @@ input UpdateAccountAccessInput {
   id: ID!
   role: AccountRole
   status: AccountState
+}
+
+input UpdateCommunityCommentInput {
+  bodyMarkdown: String
+  expectedRevision: Int!
+  id: ID!
+  publicDisplayName: String
+  state: CommunityState
 }
 
 input UpdateCommunityPostInput {

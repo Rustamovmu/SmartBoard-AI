@@ -521,3 +521,61 @@ Failed attempts are not passing evidence. Initial sandbox-only database/socket r
 This completes community posts V1 only. Comments/reports, other browser engines, production hosting/proxy/TLS, deployment-wide retention and native features remain unverified or deferred. Existing dependency advisory findings are unchanged. B3/F1 real-phone capture, restart and backend-unavailable reopen proof remains incomplete. No mobile files, private lecture content, production rollout or push were included.
 
 Changed backend files: `AGENTS.md`, `README.md`, `contracts/authentication.md`, `contracts/community.md`, `contracts/help-center.md`, `contracts/platform-accounts.md`, `contracts/schema.graphql`, `docs/Backend_plan.md`, `docs/Database_setup.md`, `docs/Development_progress.md`, `docs/Frontend_plan.md`, `scripts/browser-auth-host.ts`, `scripts/generate-schema.ts`, `scripts/lib/postman-host.ts`, `scripts/prepare-database.ts`, `src/app.module.ts`, `src/graphql/public-help-policy.spec.ts`, `src/graphql/public-help-policy.ts`, `src/modules/audit/audit.service.ts`, `src/modules/audit/schemas/audit-event.schema.spec.ts`, `src/modules/audit/schemas/audit-event.schema.ts`, `src/modules/community/community-schema.service.ts`, `src/modules/community/community.module.ts`, `src/modules/community/community.resolver.ts`, `src/modules/community/community.service.ts`, `src/modules/community/dto/community.dto.ts`, `src/modules/community/schemas/community-post.schema.ts`, `test/community.integration-spec.ts`. The website has a separate focused local commit. Complete changed/new-source, contract/link/path, credential/artifact and whitespace review precedes commits.
+
+## 2026-11-08 — F3 community comments and reports
+
+Added flat comments in the Community module and a separate Reports module, generated GraphQL contracts and explicit additive preparation for `communityComments`/`reports`. Comment creation is an explicit publication, with chosen public attribution, a 4096-byte Markdown limit, no attachment/reply/private lecture field and no new-comment server draft. Owners edit/withdraw/republish with expected revisions; removed comments remain readable with reasons and are locked until administrator restoration to draft. Editing/publication/reporting require a published parent; a state-only owner withdrawal remains available after the parent is hidden. Public comments and parent visibility share one aggregation, including empty results. Blocking does not automatically hide published text.
+
+Reports accept POST/COMMENT targets and reason codes only, never free text or media. A published target and published parent are checked transactionally. A unique non-sparse/non-partial reporter/type/target index and policy-serialized duplicate checks enforce one retained report per account/target, including after review. Reporter history is owner-scoped; administrative review lists all reports, with no reporter/moderator account IDs or target text snapshots in DTOs. OPEN reports become RESOLVED or DISMISSED with expected revisions. Reports/outcomes never automatically hide text: current target inspection, reasoned content moderation and report review are distinct actions.
+
+All writes reauthenticate under the existing shared policy lock, serializing against blocking/demotion and parent/post moderation. Posts/comments/reports share 20 service-reached write attempts/account/minute; report submission also uses 10/account/minute. Actual changes and dedicated metadata-only audit subjects commit atomically. Audit failures roll back; comment no-ops do not audit. Public mode adds only `communityComments` to the prior four allowed roots; protected report/owner/admin roots remain forbidden even behind fragments/directives. Request/cookie/CSRF/document limits and core readiness scope are unchanged. Feature indexes independently fail closed. No runtime dependency or lockfile change was needed.
+
+Reference inspection was read-only: TripLink comment module/resolver/service and input/update DTOs, plus Nestar website comment operations/detail handler. Adapted service/guard/DTO separation, owner checks and same-operation parent visibility; did not import reference IDs, pagination, profile joins, physical deletion or unrelated business rules. Reports have no equivalent in the inspected reference inventory; this project's plans and existing account/content transaction boundaries informed the implementation.
+
+The separate website adds public paginated discussion and protected write/report links; `/account/comments`, `/account/reports`, `/admin/comments` and `/admin/reports` reuse account/admin lifecycle and generated no-cache operations. Comment/report forms disclose public publication and retained server text. The report queue inspects exact current target content, supports separate removal/restore-to-draft and records review outcomes. Restricted Markdown disallows HTML/images/embedded media. Unsent text remains in memory, warns before navigation and clears on identity revocation/logout. Uncertain/stale writes lock mutations until read-only reconciliation; known save success with failed directory reload has distinct feedback. No protected discussion text is serialized into SSR props or persistent browser storage.
+
+Validation evidence: non-fixing backend lint, non-writing TypeScript inspection, 16 unit suites/103 tests, 2 HTTP E2E suites/18 tests, Nest build and schema generation passed. The full MongoDB regression passed 7 suites/120 tests, including the initial 17 discussion cases; the final uniqueness-index hardening added a partial-uniqueness rejection case and its complete discussion suite passed 18 tests after the change (including real MongoDB cleanup). Official Postman CLI regression passed 83 requests/322 assertions with zero failures and exact fixture cleanup. Initial sandbox database/socket attempts failed for permissions; permitted runs passed. All database fixtures are initially empty exact `sbt_<32 hex digits>` databases, never application records.
+
+Full website `yarn test:web --dev --local-cert --discussion` and production `yarn test:web --local-cert --discussion` each passed 52 grouped Chromium scenarios: the prior 38 auth/admin/Help/post groups plus fourteen discussion groups. Both used strict certificate verification, actual Nest/MongoDB, unchanged budgets and exact disposable cleanup. Production used an isolated ignored build directory. The focused development command passed 23 groups twice, with the final run additionally asserting the mobile Publish control and preview before screenshot capture; it used its own isolated cache. Public discussion, report queue and the settled mobile editor screenshots were visually inspected. The first mobile full-page capture omitted paint below the textarea; explicit scrolling/control checks produced a complete capture without a product change. Website type/lint/generated-schema consistency, three startup/socket cases and the final normal-origin production build passed. All temporary hosts/connections/browser contexts stopped; exact fixture database removal was confirmed. Existing certificate/trust and unrelated user processes were preserved. A first development browser attempt stopped at the report-reason selector; explicit accessible select names fixed the issue. That failed attempt confirmed its own host/database cleanup and is not passing evidence. An extra concurrent mobile QA launch exited before ready while sharing the active development cache setting; its own exact database/host cleanup was confirmed. The harness now honors an explicit separate development build directory. The expanded browser mode keeps a bounded 30-minute fixture lifetime for conservative rate-limit pacing (15 minutes otherwise); its private IPC only removes/restores fixed known comment/report indexes after exact fixture/mode/ID checks. No production fixture route exists.
+
+Application `db:prepare`/CRUD, real administrator bootstrap, content seeds, deployment and push were not performed. Release setup must explicitly prepare/verify Help/post/comment/report indexes before updating running services. Prior application policy findings and dependency advisories remain unresolved acceptance limits. B3/F1 physical-phone capture/restart/backend-unavailable reopen proof remains incomplete and phone setup remains deferred. Native authentication/video, AI, exports, other browser engines and deployment-wide no-retention remain outside this evidence. No mobile files or private lecture content changed.
+
+Exact changed backend files:
+
+```text
+AGENTS.md
+README.md
+contracts/authentication.md
+contracts/community-discussion.md
+contracts/community.md
+contracts/help-center.md
+contracts/platform-accounts.md
+contracts/schema.graphql
+docs/Backend_plan.md
+docs/Database_setup.md
+docs/Development_progress.md
+docs/Frontend_plan.md
+scripts/browser-auth-host.ts
+scripts/generate-schema.ts
+scripts/lib/postman-host.ts
+scripts/prepare-database.ts
+src/app.module.ts
+src/graphql/public-help-policy.spec.ts
+src/graphql/public-help-policy.ts
+src/modules/audit/audit.service.ts
+src/modules/audit/schemas/audit-event.schema.spec.ts
+src/modules/audit/schemas/audit-event.schema.ts
+src/modules/community/comment-schema.service.ts
+src/modules/community/comment.resolver.ts
+src/modules/community/comment.service.ts
+src/modules/community/community.module.ts
+src/modules/community/dto/comment.dto.ts
+src/modules/community/schemas/community-comment.schema.ts
+src/modules/reports/dto/report.dto.ts
+src/modules/reports/report-schema.service.ts
+src/modules/reports/reports.module.ts
+src/modules/reports/reports.resolver.ts
+src/modules/reports/reports.service.ts
+src/modules/reports/schemas/report.schema.ts
+test/discussion.integration-spec.ts
+```

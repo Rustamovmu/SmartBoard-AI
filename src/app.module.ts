@@ -1,3 +1,4 @@
+import { ReportsModule } from './modules/reports/reports.module';
 import { BadRequestException, Module, ValidationPipe } from '@nestjs/common';
 import { CommunityModule } from './modules/community/community.module';
 import { HelpModule } from './modules/help-center/help.module';
@@ -26,6 +27,7 @@ import { DeviceEnrollmentModule } from './modules/device-enrollment/device-enrol
     PlatformGraphqlModule,
     HelpModule,
     CommunityModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -10,6 +10,43 @@ export class AuditService {
   constructor(
     @InjectModel(AUDIT_MODEL) private readonly events: Model<AuditEvent>,
   ) {}
+  async discussionChanged(
+    kind: 'COMMENT' | 'REPORT',
+    actor: { _id: string; role: MemberRole },
+    subject: string,
+    action: 'CREATE' | 'UPDATE' | 'REMOVE' | 'RESTORE' | 'REVIEW',
+    previousState: string | null,
+    state: string,
+    revision: number,
+    reason: string | null,
+    session: ClientSession,
+  ) {
+    await this.events.create(
+      [
+        {
+          _id: randomUUID(),
+          action:
+            kind === 'COMMENT'
+              ? 'COMMUNITY_COMMENT_CHANGED'
+              : 'COMMUNITY_REPORT_CHANGED',
+          actorType: actor.role,
+          actorUserId: actor._id,
+          ...(kind === 'COMMENT'
+            ? { subjectCommunityCommentId: subject }
+            : { subjectCommunityReportId: subject }),
+          discussionAction: action,
+          ...(previousState === null
+            ? {}
+            : { previousDiscussionState: previousState }),
+          nextDiscussionState: state,
+          discussionRevision: revision,
+          ...(reason === null ? {} : { communityReason: reason }),
+          createdAt: new Date(),
+        },
+      ],
+      { session },
+    );
+  }
   async communityChanged(
     actor: string,
     actorType: MemberRole,

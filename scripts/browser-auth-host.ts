@@ -1,3 +1,5 @@
+import { CommentSchemaService } from '../src/modules/community/comment-schema.service';
+import { ReportSchemaService } from '../src/modules/reports/report-schema.service';
 import { CommunitySchemaService } from '../src/modules/community/community-schema.service';
 import { HelpSchemaService } from '../src/modules/help-center/help-schema.service';
 // Test-only IPC host. Never imported by AppModule or exposed as an HTTP route.
@@ -79,6 +81,8 @@ async function main() {
     await app.get(DeviceSchemaService).prepare();
     await app.get(HelpSchemaService).prepare();
     await app.get(CommunitySchemaService).prepare();
+    await app.get(CommentSchemaService).prepare();
+    await app.get(ReportSchemaService).prepare();
     // Explicit browser-admin mode only. Seed through services after proving
     // ownership/initial emptiness; never accept caller-selected fixture details.
     const adminFixture: { id: string; email: string; name: string }[] = [];
@@ -130,7 +134,10 @@ async function main() {
         database: name,
         ...(adminFixture.length ? { adminFixture } : {}),
       });
-    timeout = setTimeout(finish, 15 * 60_000);
+    timeout = setTimeout(
+      finish,
+      (process.env.BROWSER_TEST_DISCUSSION === '1' ? 30 : 15) * 60_000,
+    );
     // A private parent-process channel can expire/block synthetic fixtures or
     // temporarily remove/restore one fixed community index for outage checks.
     // It accepts opaque IDs only, checks the exact DB each time, and cannot
@@ -171,6 +178,30 @@ async function main() {
             process.env.BROWSER_TEST_ADMIN === '1'
           ) {
             await app.get(CommunitySchemaService).prepare();
+          } else if (
+            message.kind === 'comment-index-unavailable' &&
+            process.env.BROWSER_TEST_ADMIN === '1'
+          ) {
+            await connection
+              .collection('communityComments')
+              .dropIndex('postId_1_state_1_publishedAt_1__id_1');
+          } else if (
+            message.kind === 'comment-index-prepare' &&
+            process.env.BROWSER_TEST_ADMIN === '1'
+          ) {
+            await app.get(CommentSchemaService).prepare();
+          } else if (
+            message.kind === 'report-index-unavailable' &&
+            process.env.BROWSER_TEST_ADMIN === '1'
+          ) {
+            await connection
+              .collection('reports')
+              .dropIndex('reporterUserId_1_targetType_1_targetId_1');
+          } else if (
+            message.kind === 'report-index-prepare' &&
+            process.env.BROWSER_TEST_ADMIN === '1'
+          ) {
+            await app.get(ReportSchemaService).prepare();
           } else throw new Error('Unknown fixture command.');
           if (process.connected)
             process.send?.({ kind: 'done', id: message.id });

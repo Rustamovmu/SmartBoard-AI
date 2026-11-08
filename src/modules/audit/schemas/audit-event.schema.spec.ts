@@ -30,6 +30,23 @@ describe('audit subject validation', () => {
 });
 
 describe('community audit subjects', () => {
+  it.each([
+    ['COMMUNITY_COMMENT_CHANGED', 'subjectCommunityCommentId'],
+    ['COMMUNITY_REPORT_CHANGED', 'subjectCommunityReportId'],
+  ])('requires a dedicated subject for %s', async (action, field) => {
+    const event = {
+      _id: 'event',
+      action,
+      actorType: 'USER',
+      actorUserId: 'actor',
+      [field]: 'subject',
+      createdAt: new Date(),
+    };
+    await expect(new Audit(event).validate()).resolves.toBeUndefined();
+    await expect(
+      new Audit({ ...event, [field]: undefined }).validate(),
+    ).rejects.toMatchObject({ errors: { [field]: expect.anything() } });
+  });
   it('requires a community post subject and preserves user subjects for older actions', async () => {
     const event = {
       _id: 'event',
