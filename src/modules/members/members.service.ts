@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import type { ClientSession, Model } from 'mongoose';
 import type { MemberRole, PublicMember } from '../../contracts/auth-v1';
 import { MEMBER_MODEL, Member } from './schemas/member.schema';
+import { UsernameTakenException } from './username-taken.exception';
 import {
   normalizeUsername,
   USERNAME_PATTERN,
@@ -59,6 +60,15 @@ export class MembersService {
         'code' in error &&
         error.code === 11000
       ) {
+        if (
+          'keyPattern' in error &&
+          typeof error.keyPattern === 'object' &&
+          error.keyPattern !== null &&
+          Object.keys(error.keyPattern).length === 1 &&
+          'username' in error.keyPattern &&
+          error.keyPattern.username === 1
+        )
+          throw new UsernameTakenException();
         throw new ConflictException();
       }
       throw error;

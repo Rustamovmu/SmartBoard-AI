@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Controller,
+  ConflictException,
   Get,
   HttpException,
   INestApplication,
@@ -13,10 +14,24 @@ import { AppModule } from '../src/app.module';
 import { getConnectionToken } from '@nestjs/mongoose';
 import { createConnectionStub } from './helpers/connection-stub';
 import { AuthSchemaService } from '../src/modules/auth/auth-schema.service';
+import { UsernameTakenException } from '../src/modules/members/username-taken.exception';
 
 // Only registered in this test app, never in the production module.
 @Controller('synthetic-error')
 class SyntheticErrorController {
+  @Get('username-taken')
+  usernameTaken() {
+    throw new UsernameTakenException();
+  }
+
+  @Get('spoofed-username-taken')
+  spoofedUsernameTaken() {
+    throw new ConflictException({
+      code: 'USERNAME_TAKEN',
+      message: 'synthetic-private-note',
+    });
+  }
+
   @Get('validation')
   validation() {
     throw new BadRequestException({ message: 'synthetic-private-note' });
@@ -58,6 +73,18 @@ describe('safe HTTP errors (e2e)', () => {
     ['validation', 400, 'VALIDATION_ERROR', 'Invalid request.'],
     ['unexpected', 500, 'INTERNAL_ERROR', 'Internal server error.'],
     ['unavailable', 503, 'SERVICE_UNAVAILABLE', 'Service unavailable.'],
+    [
+      'username-taken',
+      409,
+      'USERNAME_TAKEN',
+      'This username is already in use. Please choose a different username.',
+    ],
+    [
+      'spoofed-username-taken',
+      409,
+      'CONFLICT',
+      'Account could not be created.',
+    ],
   ] as const)(
     'returns a stable safe response for %s',
     async (path, statusCode, code, message) => {

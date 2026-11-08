@@ -17,7 +17,19 @@ Use the existing native or browser transport and [authentication prerequisites](
 }
 ```
 
-Success is 201 with a USER/ACTIVE session grant. Username is required by the website signup form but optional in the HTTP contract for compatibility with older clients. Omitted usernames remain absent in MongoDB and appear as `null` in authenticated account responses. Existing accounts are not backfilled. Invalid/null/unknown inputs return 400; duplicate email or username returns 409. Concurrent claims use the database's unique index; unsuccessful signup rolls back the user/session transaction.
+Success is 201 with a USER/ACTIVE session grant. Username is required by the website signup form but optional in the HTTP contract for compatibility with older clients. Omitted usernames remain absent in MongoDB and appear as `null` in authenticated account responses. Existing accounts are not backfilled. Invalid/null/unknown inputs return 400; duplicate email returns generic 409 CONFLICT. Concurrent claims use the database's unique index; unsuccessful signup rolls back the user/session transaction.
+
+A confirmed username-index collision returns:
+
+```json
+{
+  "statusCode": 409,
+  "code": "USERNAME_TAKEN",
+  "message": "This username is already in use. Please choose a different username."
+}
+```
+
+The website shows that instruction after signup submission and keeps the entered details so the user can choose another username and resubmit. It does not poll a public availability endpoint or disclose the other account's details.
 
 `POST /auth/login` accepts either username or email in `identifier`:
 

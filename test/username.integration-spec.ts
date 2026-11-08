@@ -202,10 +202,49 @@ describe('username identity with disposable MongoDB', () => {
     expect(results.map((r) => r.status).sort((a, b) => a - b)).toEqual([
       201, 409,
     ]);
+    expect(results.find((r) => r.status === 409)!.body).toEqual({
+      statusCode: 409,
+      code: 'USERNAME_TAKEN',
+      message:
+        'This username is already in use. Please choose a different username.',
+    });
     expect(await users.countDocuments()).toBe(1);
     expect(
       await connection.db!.collection('authSessions').countDocuments(),
     ).toBe(1);
+  });
+  it('identifies normalized username collisions without exposing account details, preserves email conflict handling, and accepts another username', async () => {
+    const first = await signup('already_used').expect(201);
+    const email = `${randomUUID()}@example.test`;
+    const send = (username: string, chosenEmail = email) =>
+      api()
+        .post('/auth/signup')
+        .set(native)
+        .send({
+          email: chosenEmail,
+          username,
+          name: 'Same Full Name',
+          password,
+        });
+    const taken = await send('  ALREADY_USED  ')
+      .expect(409)
+      .expect('Cache-Control', 'no-store');
+    expect(taken.body).toEqual({
+      statusCode: 409,
+      code: 'USERNAME_TAKEN',
+      message:
+        'This username is already in use. Please choose a different username.',
+    });
+    expect(await users.countDocuments({ email })).toBe(0);
+    expect(
+      (await send('not_used_yet', first.body.user.email).expect(409)).body.code,
+    ).toBe('CONFLICT');
+    const retry = await send('a_different_username').expect(201);
+    expect(retry.body.user.username).toBe('a_different_username');
+    expect(await users.countDocuments()).toBe(2);
+    expect(
+      await connection.db!.collection('authSessions').countDocuments(),
+    ).toBe(2);
   });
   it('shares the account login budget across aliases before password verification', async () => {
     const owner = await signup('shared_alias').expect(201);

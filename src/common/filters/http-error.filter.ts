@@ -9,6 +9,7 @@ import {
 import type { Response } from 'express';
 import type { HttpErrorResponse } from '../../contracts/platform-v1';
 import { safeGraphqlError } from '../../graphql/graphql-errors';
+import { UsernameTakenException } from '../../modules/members/username-taken.exception';
 
 const ERRORS: Record<number, Omit<HttpErrorResponse, 'statusCode'>> = {
   400: { code: 'VALIDATION_ERROR', message: 'Invalid request.' },
@@ -48,11 +49,20 @@ export class HttpErrorFilter implements ExceptionFilter {
       exception instanceof HttpException
         ? exception.getStatus()
         : (parserStatus ?? HttpStatus.INTERNAL_SERVER_ERROR);
-    const error = ERRORS[statusCode] ?? {
-      code: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_REJECTED',
-      message:
-        statusCode >= 500 ? 'Internal server error.' : 'Request rejected.',
-    };
+    const error =
+      exception instanceof UsernameTakenException
+        ? {
+            code: 'USERNAME_TAKEN',
+            message:
+              'This username is already in use. Please choose a different username.',
+          }
+        : (ERRORS[statusCode] ?? {
+            code: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_REJECTED',
+            message:
+              statusCode >= 500
+                ? 'Internal server error.'
+                : 'Request rejected.',
+          });
 
     if (statusCode >= 500) this.logger.error(`HTTP failure: ${statusCode}`);
 
