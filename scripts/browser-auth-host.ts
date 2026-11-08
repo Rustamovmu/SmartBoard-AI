@@ -18,6 +18,7 @@ import { AdminPolicyService } from '../src/modules/admin/admin-policy.service';
 import { DeviceSchemaService } from '../src/modules/device-enrollment/device-schema.service';
 import { MembersService } from '../src/modules/members/members.service';
 import { PasswordService } from '../src/modules/auth/password.service';
+import { PasswordRecoveryService } from '../src/modules/auth/password-recovery.service';
 import {
   assertExactTestDatabase,
   assertInitiallyEmpty,
@@ -86,6 +87,7 @@ async function main() {
     // Explicit browser-admin mode only. Seed through services after proving
     // ownership/initial emptiness; never accept caller-selected fixture details.
     const adminFixture: { id: string; email: string; name: string }[] = [];
+    const recoveryFixture: { id: string; email: string; name: string }[] = [];
     if (process.env.BROWSER_TEST_ADMIN === '1') {
       assertExactTestDatabase(connection, name);
       const marker = name.slice('sbt_'.length);
@@ -121,6 +123,42 @@ async function main() {
         }
       });
     }
+    // Recovery proofs are delivered only over private parent IPC for these fixed
+    // synthetic identities, after exact disposable ownership/emptiness checks.
+    if (process.env.BROWSER_TEST_RECOVERY === '1') {
+      assertExactTestDatabase(connection, name);
+      const marker = name.slice('sbt_'.length);
+      const passwordHash = await app
+        .get(PasswordService)
+        .hash(`Synthetic-recovery-${marker}`);
+      await connection.transaction(async (session) => {
+        recoveryFixture.length = 0;
+        await app.get(AdminPolicyService).acquire(session);
+        for (let index = 0; index < 3; index++) {
+          const role = index === 2 ? 'ADMIN' : 'USER';
+          const member = await app
+            .get(MembersService)
+            .create(
+              {
+                email: `recovery-web-${marker}-${index}@example.test`,
+                name: `Synthetic Recovery ${index + 1}`,
+                passwordHash,
+              },
+              role,
+              session,
+            );
+          if (role === 'ADMIN')
+            await app
+              .get(AuditService)
+              .administratorBootstrapped(member._id, session);
+          recoveryFixture.push({
+            id: member._id,
+            email: member.email,
+            name: member.name,
+          });
+        }
+      });
+    }
     configureApplication(app);
     await app.listen(0, '127.0.0.1');
     const port = (app.getHttpServer().address() as { port: number }).port;
@@ -133,6 +171,7 @@ async function main() {
             : `https://localhost:${port}`,
         database: name,
         ...(adminFixture.length ? { adminFixture } : {}),
+        ...(recoveryFixture.length ? { recoveryFixture } : {}),
       });
     timeout = setTimeout(
       finish,
@@ -141,7 +180,8 @@ async function main() {
     // A private parent-process channel can expire/block synthetic fixtures or
     // temporarily remove/restore one fixed community index for outage checks.
     // It accepts opaque IDs only, checks the exact DB each time, and cannot
-    // issue credentials, select another DB or operate on application records.
+    // select another DB or operate on application records. Recovery mode can
+    // privately issue a proof only for a fixed recovery fixture identity.
     process.on(
       'message',
       (message: { kind?: string; id?: string; userId?: string }) => {
@@ -153,6 +193,32 @@ async function main() {
           assertExactTestDatabase(connection, name);
           if (!/^[a-f0-9-]{36}$/.test(message.userId || ''))
             throw new Error('Invalid fixture ID.');
+          if (
+            message.kind === 'recovery-issue' ||
+            message.kind === 'recovery-expire'
+          ) {
+            const member = recoveryFixture.find(
+              (entry) => entry.id === message.userId,
+            );
+            if (process.env.BROWSER_TEST_RECOVERY !== '1' || !member)
+              throw new Error('Invalid recovery fixture.');
+            if (message.kind === 'recovery-issue') {
+              const proof = await app
+                .get(PasswordRecoveryService)
+                .issue(member.email);
+              if (process.connected)
+                process.send?.({ kind: 'done', id: message.id, ...proof });
+            } else {
+              await connection
+                .collection('users')
+                .updateOne({ _id: member.id } as never, {
+                  $set: { passwordRecoveryExpiresAt: new Date(0) },
+                });
+              if (process.connected)
+                process.send?.({ kind: 'done', id: message.id });
+            }
+            return;
+          }
           if (message.kind === 'expire-access') {
             await connection
               .collection('authSessions')

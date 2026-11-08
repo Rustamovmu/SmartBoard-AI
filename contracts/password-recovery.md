@@ -1,6 +1,6 @@
 # Operator-assisted password recovery — version 1
 
-Implemented by `npm run recovery:issue` and `POST /auth/password/reset`. This is a local-operator recovery flow, with no public issuance, email delivery, automatic notification, recovery-code list or frontend reset screen. The operator must independently verify the account owner and deliver the proof through an approved private channel. Database/operator access is the issuance authority; a logged-in USER or ADMIN cannot issue proofs through HTTP/GraphQL.
+Implemented by `npm run recovery:issue` and `POST /auth/password/reset`. This is a local-operator recovery flow, with no public issuance, email delivery, automatic notification or recovery-code list. The separate website now provides a manual-code `/reset-password` form. The operator must independently verify the account owner and deliver the proof through an approved private channel. Database/operator access is the issuance authority; a logged-in USER or ADMIN cannot issue proofs through HTTP/GraphQL.
 
 ## Local issuance
 
@@ -41,7 +41,7 @@ Endpoint: `POST /auth/password/reset`, `Content-Type: application/json`.
 }
 ```
 
-Passwords are not trimmed and use the existing Argon2id policy. The frontend should confirm the new password locally before submitting it; no confirmation UI is implemented here. No email, user ID, role, status, phone path, lecture data or other unknown field is accepted. JSON remains bounded to 8 KiB. Proofs/passwords belong in the request body, not query strings or telemetry.
+Passwords are not trimmed and use the existing Argon2id policy. The separate website confirms the new password locally before submitting it. No email, user ID, role, status, phone path, lecture data or other unknown field is accepted. JSON remains bounded to 8 KiB. Proofs/passwords belong in the request body, not query strings or telemetry.
 
 Success: HTTP 200, `Cache-Control: no-store`, exactly `{ "success": true }`. No access/refresh credential is issued and no automatic login occurs. All previous sessions become unusable, including native device-bound and browser sessions. Browser success also clears access, refresh and CSRF cookies; obtain a fresh CSRF challenge and sign in normally afterward. Other accounts' server-side credentials/sessions are not revoked. The caller's browser cookies are cleared even if that browser was signed in as a different account. Device inventory and phone files/catalogs/exports remain intact; new login is unbound and follows the existing explicit re-enrollment contract.
 
@@ -75,6 +75,16 @@ Health readiness retains its core database/topology/auth-index checks; it does n
 
 The [Postman collection](../postman/SmartBoardAI.postman_collection.json) receives one synthetic proof through `GET /__test/recovery-proof` **only in the disposable Postman host script**. It requires the verified test marker, fixes the target to a generated synthetic account, permits one retrieval and accepts no account selection. It is absent from AppModule/production controllers; integration tests verify that absence. No credential is saved to a collection/example/report or passed in CLI arguments. See [dated verification](../docs/Postman_Auth_Verification.md).
 
-Email/notification delivery, independent human identity verification, real browser HTTPS, native secure storage/UI, clipboard delivery, phone persistence and active-stream revocation remain unimplemented or unverified. This implements the recovery backend, not full V2 acceptance.
+Email/notification delivery, independent human identity verification, native secure storage/UI, clipboard delivery, phone persistence and active-stream revocation remain unimplemented or unverified. The separate website now has real local HTTPS browser verification for its manual-code form; this does not certify production hosting or real-account recovery. Full V2 acceptance remains open.
 
 Reference: [OWASP password recovery guidance](https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html) informed proof generation, expiry/single use, normal login afterward and session invalidation. The project's explicit no-credential-in-URL policy is retained.
+
+## Website reset form
+
+The login page links to `/reset-password`. The user obtains a recovery code privately from an operator who verifies account ownership, then pastes it into the masked form and enters the new password twice. There is no email-request button, URL-prefilled proof, web issuer or automatic login. Unknown query parameters redirect to the bare page; fragments are discarded without reading a credential. SSR sets no-store and returns empty props. The form explicitly uses POST, and its fields are disabled until the configured HTTPS origin is verified. Passwords preserve spaces.
+
+The browser uses the existing cross-tab authentication lock for CSRF issuance and the complete reset response; it does not call `/me` or refresh before resetting. The request body contains only recoveryToken/password. A successful response clears the credential-free session-uncertainty marker, broadcasts session invalidation, clears the form and explains normal login/all-session revocation. It also explains that the caller browser is signed out when it belonged to another account.
+
+Invalid/expired/used/superseded/inactive proofs share generic UI rejection. Local mismatch/malformed proof does not send a reset; server attempts clear fields. Pending submissions cannot be repeated. Unknown/5xx/unreadable/lost responses lock the form without replay: try signing in with the new password, or obtain a newly issued code before explicitly starting again. A credential-free existing uncertainty marker prevents refresh after an ambiguous reset; deterministic 4xx errors restore any marker that predated the attempt. No proof/password is stored in URLs, React state, SSR props, browser storage, logs or screenshots. Form fields also clear on pagehide/pageshow and cross-tab session notifications. Browser Web Locks and storage must be available before a reset POST can be sent.
+
+Verification uses `yarn test:web --dev --local-cert --recovery` and `yarn test:web --local-cert --recovery` in the separate website. Explicit recovery mode seeds only fixed synthetic USER/ADMIN identities after the exact disposable database is proved empty. The test host can issue/expire proofs for those whitelisted IDs only through private parent-process IPC; it has no public fixture route and is never imported by AppModule. Proofs remain in process memory and the intended reset body, never command arguments or artifacts. See [dated progress](../docs/Development_progress.md) and [website verification](../../smartbord-ai-frontend-web/docs/Verification.md) for actual checks, failures and cleanup. No application-account proof was issued or consumed by this UI increment.
