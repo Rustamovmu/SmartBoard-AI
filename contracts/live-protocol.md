@@ -1,6 +1,6 @@
 # Connected analysis lifecycle — version 1
 
-Status: future vision lifecycle requirements. The [native connection foundation](analysis-transport.md) now implements authenticated grants and bounded analyze/control sockets, disabled by default. It accepts no images and has no binary media codec or worker. Candidate/save-ack schemas and executable vision validation remain required before any client uses image analysis. Do not generate client types from imagined GraphQL/media operations.
+Status: future vision lifecycle requirements. The [native connection foundation](analysis-transport.md) now implements authenticated grants and bounded analyze/control sockets, disabled by default. It accepts no images and has no binary media codec or connected worker. A separate [standalone CPU frame core](vision-worker.md) now measures bounded in-memory JPEGs without being connected to Nest. Candidate/save-ack schemas and executable vision validation remain required before any client uses image analysis. Do not generate client types from imagined GraphQL/media operations.
 
 The [V1 constants](../src/contracts/platform-v1.ts) and both [backend](../docs/Backend_plan.md) and [frontend](../docs/Frontend_plan.md) plans govern this contract. Breaking wire changes require a protocol-version change and coordinated frontend update.
 

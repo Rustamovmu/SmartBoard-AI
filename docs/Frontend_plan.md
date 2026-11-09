@@ -308,3 +308,8 @@ Deliver both website and mobile source targets, reusable local-library/storage a
 ## 2026-11-09 — Native connection handoff
 
 The backend now implements the default-off [native connection foundation](../contracts/analysis-transport.md) at `/analysis/access`, `/ws/analyze` and `/ws/control`. Only already-enrolled native sessions may request endpoint-specific one-use tickets. Use native authorization headers, never URL credentials; send a valid application heartbeat every ten seconds. Both sockets always report vision unavailable and reject media. Mobile secure credentials, enrollment/connection UI, browser sockets and image/candidate/local-save-ack codecs are not added by this backend increment. The existing phone-local capture/recording path remains independent. Dated [backend verification](Analysis_transport_verification.md) scopes synthetic real-socket evidence; it does not establish physical-phone or production-hosting acceptance.
+
+
+## 2026-11-09 — Standalone CPU frame worker boundary
+
+A separate backend [Python frame core](../contracts/vision-worker.md) now accepts bounded in-memory JPEG bytes plus confirmed source geometry and returns actual rectified/enhanced bytes, appearance measurements and fresh CPU YOLO11n person boxes/overlap. It is not connected to `/ws/analyze`; current socket capabilities remain `vision: false` / `acceptsFrames: false`. Its tracking is unverified and automatic capture is always false. No mobile/website source, auth bridge, calibration/tracking UI, candidate codec, save acknowledgment or phone-local files changed. Do not wire mobile uploads or show Saved/AI success from this standalone milestone; the authenticated process bridge, decision lifecycle and physical-device validation remain separate work.

@@ -161,7 +161,7 @@ Public community publishing is a separate intentional action. Community posts V1
 
 ## 7. RAM-only connected analysis contract
 
-The [native connection foundation](../contracts/analysis-transport.md) implements grants and bounded analyze/control sockets behind a default-off flag. Native identity/revocation is implemented; image processing, candidate/save acknowledgments and the Python worker below remain future requirements. See dated verification rather than interpreting this target sequence as current behavior.
+The [native connection foundation](../contracts/analysis-transport.md) implements grants and bounded analyze/control sockets behind a default-off flag. Native identity/revocation and a separate [standalone CPU frame worker](../contracts/vision-worker.md) are implemented. The worker measures confirmed geometry, appearance and current real person boxes in RAM; it is not connected to Nest and cannot authorize automatic captures. The connected pipeline, tracking/stability/change decisions and candidate/save acknowledgments below remain future requirements. See dated verification rather than interpreting this target sequence as current behavior.
 
 1. Phone creates a local lecture and persistent local destination before opening analysis.
 2. After authentication, the backend grants a short-lived, stream-scoped analysis permission. No lecture record is created in MongoDB.

@@ -42,6 +42,8 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # AI model weights
 *.pt

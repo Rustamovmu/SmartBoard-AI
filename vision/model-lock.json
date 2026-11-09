@@ -1,0 +1,15 @@
+{
+  "model": "YOLO11n",
+  "source": "https://github.com/ultralytics/assets/releases/download/v8.3.0/yolo11n.pt",
+  "source_sha256": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+  "onnx_sha256": "7afa50f64e94321661c860675810d1328d7ba6994d27e4fb2614678e78ee9e1a",
+  "input_size": 640,
+  "output_shape": [
+    1,
+    84,
+    8400
+  ],
+  "opset": 12,
+  "license": "https://www.ultralytics.com/license",
+  "export_profile": 1
+}
