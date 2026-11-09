@@ -133,7 +133,13 @@ export class AuthSessionService {
     if (!user) throw new ForbiddenException();
     if (!(await this.deviceIsActive(record, transaction)))
       throw new UnauthorizedException();
-    return { user, sessionId: id, deviceId: record.deviceId ?? null };
+    return {
+      user,
+      sessionId: id,
+      deviceId: record.deviceId ?? null,
+      accessExpiresAt: record.accessExpiresAt,
+      sessionExpiresAt: record.expiresAt,
+    };
   }
 
   async rotate(raw: string, transport: AuthTransport): Promise<SessionGrant> {

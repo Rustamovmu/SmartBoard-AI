@@ -264,9 +264,9 @@ Shared server routes:
 | GET /auth/me, /auth/csrf | Validated identity/browser CSRF |
 | POST /auth/password/reset | Consume an operator-issued recovery proof; require normal login afterward |
 | POST /graphql | Accounts, enrollment, published help/community and admin |
-| POST /analysis/access | Short-lived transient-analysis permission |
-| WSS /ws/analyze | Ephemeral frames/results/local-save acknowledgments |
-| WSS /ws/control | Device/account control without lecture data |
+| POST /analysis/access | Implemented default-off native connection tickets; no media |
+| WSS /ws/analyze | Implemented connection/status; frames/results/save acknowledgments remain planned |
+| WSS /ws/control | Implemented native connection/status/revocation without lecture data |
 | GET /health/live, /health/ready | Service readiness |
 
 There is no /uploads/videos, server media gallery, private lecture CRUD API, server export archive or lecture-sync service.
@@ -303,3 +303,8 @@ Existing development-Mac data is not already on a phone. Offer a local export bu
 Completion requires real recordings and notes to be saved on a physical user's phone by default, readable after app restart and backend shutdown, with appropriate native Files/Photos integration and honest permission/error states. The platform backend must have no retained lecture copy. Changes to plans do not implement this behavior in the current MVP.
 
 Deliver both website and mobile source targets, reusable local-library/storage adapters, lockfiles, generated contracts, native setup/signing instructions, tested device matrix, privacy tests and a clear user guide about where every file is saved.
+
+
+## 2026-11-09 — Native connection handoff
+
+The backend now implements the default-off [native connection foundation](../contracts/analysis-transport.md) at `/analysis/access`, `/ws/analyze` and `/ws/control`. Only already-enrolled native sessions may request endpoint-specific one-use tickets. Use native authorization headers, never URL credentials; send a valid application heartbeat every ten seconds. Both sockets always report vision unavailable and reject media. Mobile secure credentials, enrollment/connection UI, browser sockets and image/candidate/local-save-ack codecs are not added by this backend increment. The existing phone-local capture/recording path remains independent. Dated [backend verification](Analysis_transport_verification.md) scopes synthetic real-socket evidence; it does not establish physical-phone or production-hosting acceptance.

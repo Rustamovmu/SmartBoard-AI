@@ -1,6 +1,6 @@
 # Device enrollment — version 1
 
-Implemented at `POST /graphql`; see the versioned [schema](schema.graphql). Public authentication remains HTTP. This is platform enrollment, not hardware attestation or phone-storage implementation. No analysis/access grant or control WebSocket exists yet.
+Implemented at `POST /graphql`; see the versioned [schema](schema.graphql). Public authentication remains HTTP. This is platform enrollment, not hardware attestation or phone-storage implementation. The default-off [native connection foundation](analysis-transport.md) now provides access tickets and analyze/control sockets without image processing.
 
 ## Identity and lifecycle
 
@@ -116,7 +116,7 @@ Access authentication and refresh independently check bound device existence, ow
 
 Account blocking/role changes revoke all account sessions under the existing auth-version policy. Device records remain as platform inventory; reactivation restores no old session. Logout also leaves inventory intact. Revocation is permanent for that record; a new login is unbound and requires a new explicit enrollment, producing a new device ID. Login accepts no device ID or pairing code. This increment binds enrollment to one auth-session family, not to a permanent phone hardware identity; future persistent reattachment requires a separately reviewed credential contract.
 
-Unbound sessions retain existing account operations. Future `/analysis/access` must require a live enrolled-device binding as well as current account status. Control sockets/analysis grants and their active-stream shutdown are not implemented here. No operation wipes phone files, catalog or exports. [Atomic selected-device batches](device-batches.md) add `revokeDevices` and `adminRevokeDevices` without enabling GraphQL HTTP request batching.
+Unbound sessions retain existing account operations. `/analysis/access` must require a live enrolled-device binding as well as current account status. The native connection foundation validates the live bound session and closes streams after polling detects revocation; see its contract for detection delay and cleanup limits. No operation wipes phone files, catalog or exports. [Atomic selected-device batches](device-batches.md) add `revokeDevices` and `adminRevokeDevices` without enabling GraphQL HTTP request batching.
 
 ## Setup, tests and cleanup
 

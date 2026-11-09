@@ -161,6 +161,8 @@ Public community publishing is a separate intentional action. Community posts V1
 
 ## 7. RAM-only connected analysis contract
 
+The [native connection foundation](../contracts/analysis-transport.md) implements grants and bounded analyze/control sockets behind a default-off flag. Native identity/revocation is implemented; image processing, candidate/save acknowledgments and the Python worker below remain future requirements. See dated verification rather than interpreting this target sequence as current behavior.
+
 1. Phone creates a local lecture and persistent local destination before opening analysis.
 2. After authentication, the backend grants a short-lived, stream-scoped analysis permission. No lecture record is created in MongoDB.
 3. Phone sends selected compressed JPEG frames, capped at 2 MB and 16 million decoded pixels, with an ephemeral stream ID, frame ID and monotonic/source timestamp.
@@ -204,9 +206,9 @@ Both plan documents use these routes:
 | Auth HTTP | POST /auth/signup, /auth/login, /auth/refresh, /auth/logout; GET /auth/me, /auth/csrf |
 | Password recovery | POST /auth/password/reset: consumes a short-lived proof issued by an explicit local operator command; no public issuer or email delivery is assumed |
 | GraphQL | POST /graphql: accounts, enrollment, published help/community and admin operations only |
-| Analysis authorization | POST /analysis/access: short-lived stream permission, not a media upload |
-| Frame processing | WSS /ws/analyze: bounded ephemeral frames, results and local-save acknowledgments |
-| Enrollment/status | WSS /ws/control: device/account control, no private lecture feed |
+| Analysis authorization | POST /analysis/access: implemented native endpoint-specific connection tickets; disabled by default |
+| Frame processing | WSS /ws/analyze: implemented connection/status only; frames/results/local-save acknowledgments remain planned |
+| Enrollment/status | WSS /ws/control: implemented native connection/status/revocation, no private lecture feed |
 | Health | GET /health/live, /health/ready |
 
 There is no public media library, lecture-sync endpoint, recording database API or full-video upload endpoint.
