@@ -6,6 +6,18 @@ export class AnalysisBusyException extends HttpException {
   }
 }
 
+export class VisionUnavailableException extends HttpException {
+  constructor() {
+    super('Vision processing is unavailable.', 503);
+  }
+}
+
+export class MediaValidationError extends Error {
+  constructor() {
+    super('Invalid frame.');
+  }
+}
+
 export const ANALYSIS_ERRORS = {
   UNAUTHENTICATED: 'Authentication required.',
   FORBIDDEN: 'Access denied.',

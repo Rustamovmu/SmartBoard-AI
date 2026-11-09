@@ -43,7 +43,7 @@ class FrameWorker:
             encoded.fill(0)
 
     def process(
-        self, jpeg: bytes, width: int, height: int, corners: Corners
+        self, jpeg: bytes | bytearray, width: int, height: int, corners: Corners
     ) -> FrameResult:
         if not self._lock.acquire(blocking=False):
             raise VisionBusyError()

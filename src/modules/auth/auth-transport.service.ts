@@ -18,6 +18,7 @@ import type { RefreshDto } from './dto/auth.dto';
 
 export interface AuthRequest extends Request {
   authTransport: AuthTransport;
+  rawBody?: Buffer;
 }
 
 @Injectable()

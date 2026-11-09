@@ -1,10 +1,10 @@
 # Standalone frame worker — first B4 increment
 
-Implemented 2026-11-09 under `vision/`; see [setup](../vision/README.md) and [dated evidence](../docs/Vision_worker_verification.md). This is an internal synchronous Python interface. It adds no public API, HTTP service, socket frame codec, GraphQL operation, database collection or application setting. [Native transport](analysis-transport.md) remains default-off and rejects media. [Candidate/acknowledgment lifecycle](live-protocol.md) remains future work.
+Implemented 2026-11-09 under `vision/`; see [setup](../vision/README.md) and [dated evidence](../docs/Vision_worker_verification.md). This is an internal synchronous Python interface used by a separate isolated-process bridge documented in [analysis media](analysis-media.md). The standalone core itself still adds no HTTP service, GraphQL operation, database collection or candidate lifecycle. [Native transport](analysis-transport.md) and the media bridge remain default-off. [Candidate/acknowledgment lifecycle](live-protocol.md) remains future work.
 
 ## Input and bounds
 
-`FrameWorker.process(jpeg: bytes, width: int, height: int, corners: Corners) -> FrameResult` accepts one immutable JPEG byte string, exact encoded dimensions and confirmed source geometry. It does not accept or fetch a path/URL. No local lecture ID/title/note/OCR/file reference is part of the interface.
+`FrameWorker.process(jpeg: bytes | bytearray, width: int, height: int, corners: Corners) -> FrameResult` accepts one JPEG buffer, exact encoded dimensions and confirmed source geometry. The private bridge passes a mutable bytearray and clears it after processing. The standalone helper can also receive immutable bytes from its caller. It does not accept or fetch a path/URL. No local lecture ID/title/note/OCR/file reference is part of the interface.
 
 - Compressed JPEG: 4–2,000,000 bytes, SOI/EOI markers required; supported RGB/grayscale JPEG only.
 - Declared axes: integer 32–8,192 pixels, excluding booleans; at most 16,000,000 decoded pixels.
@@ -38,7 +38,7 @@ OpenCV Net retains its input/activations. After each actual inference the adapte
 
 The worker zeros owned source/rectified/enhanced pixel arrays on success and failure, and retains only its detector/lock/closed state. Returned immutable JPEGs and the input bytes are caller-owned; callers must release them and must not retain errors/results in logs or disk queues. Closing releases the detector. No server comparison baseline advances because no baseline exists yet.
 
-Resource bounds cover frame pixels, transformed outputs, static 640 model tensors, fixed output predictions and bounded box lists. There is no tested hard RSS/OS-memory ceiling and no five-frames/second acceptance claim. The synchronous core has no hard inference timeout or interrupt/revocation hook. A future isolated-process bridge must bound those, discard late results and audit cancellation/retention before enabling media on existing authenticated sockets.
+Resource bounds cover frame pixels, transformed outputs, static 640 model tensors, fixed output predictions and bounded box lists. There is no tested hard RSS/OS-memory ceiling and no five-frames/second acceptance claim. The synchronous core has no hard inference timeout or interrupt/revocation hook. The separate process bridge enforces a 10-second job deadline by killing the worker, discards late results, and performs binding checks before dispatch and delivery. That bounds the application process boundary; it does not establish physical memory zeroization or deployment-wide no-retention.
 
 ## Provenance and verification
 

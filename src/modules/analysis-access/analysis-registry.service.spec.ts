@@ -44,6 +44,50 @@ describe('bounded analysis registry', () => {
       ).toThrow('ANALYSIS_TRANSPORT_ENABLED must be true or false.');
   });
 
+  it('validates the separate media opt-in and absolute Python override', () => {
+    const previous = {
+      transport: process.env.ANALYSIS_TRANSPORT_ENABLED,
+      media: process.env.ANALYSIS_MEDIA_ENABLED,
+      python: process.env.VISION_PYTHON_EXECUTABLE,
+    };
+    try {
+      delete process.env.ANALYSIS_TRANSPORT_ENABLED;
+      delete process.env.ANALYSIS_MEDIA_ENABLED;
+      delete process.env.VISION_PYTHON_EXECUTABLE;
+      expect(new AnalysisConfig()).toMatchObject({
+        enabled: false,
+        mediaEnabled: false,
+      });
+      process.env.ANALYSIS_TRANSPORT_ENABLED = 'true';
+      process.env.ANALYSIS_MEDIA_ENABLED = 'true';
+      expect(new AnalysisConfig().mediaEnabled).toBe(true);
+      process.env.ANALYSIS_TRANSPORT_ENABLED = 'false';
+      expect(() => new AnalysisConfig()).toThrow(
+        'Analysis media requires the transport flag.',
+      );
+      process.env.ANALYSIS_TRANSPORT_ENABLED = 'true';
+      process.env.ANALYSIS_MEDIA_ENABLED = '1';
+      expect(() => new AnalysisConfig()).toThrow(
+        'ANALYSIS_MEDIA_ENABLED must be true or false.',
+      );
+      process.env.ANALYSIS_MEDIA_ENABLED = 'false';
+      process.env.VISION_PYTHON_EXECUTABLE = 'python';
+      expect(() => new AnalysisConfig()).toThrow(
+        'VISION_PYTHON_EXECUTABLE must be an absolute path.',
+      );
+    } finally {
+      if (previous.transport === undefined)
+        delete process.env.ANALYSIS_TRANSPORT_ENABLED;
+      else process.env.ANALYSIS_TRANSPORT_ENABLED = previous.transport;
+      if (previous.media === undefined)
+        delete process.env.ANALYSIS_MEDIA_ENABLED;
+      else process.env.ANALYSIS_MEDIA_ENABLED = previous.media;
+      if (previous.python === undefined)
+        delete process.env.VISION_PYTHON_EXECUTABLE;
+      else process.env.VISION_PYTHON_EXECUTABLE = previous.python;
+    }
+  });
+
   it('keeps only ticket hashes and enforces endpoint scope and atomic redemption', async () => {
     const grant = registry.reserve(binding());
     expect(

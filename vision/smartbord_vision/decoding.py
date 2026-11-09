@@ -16,9 +16,9 @@ from .contracts import (
 )
 
 
-def decode_jpeg(jpeg: bytes, width: int, height: int) -> Pixels:
+def decode_jpeg(jpeg: bytes | bytearray, width: int, height: int) -> Pixels:
     if (
-        type(jpeg) is not bytes
+        type(jpeg) not in (bytes, bytearray)
         or not 4 <= len(jpeg) <= MAX_JPEG_BYTES
         or type(width) is not int
         or type(height) is not int

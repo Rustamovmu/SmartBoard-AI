@@ -28,15 +28,24 @@ export function configureApplication(app: NestExpressApplication) {
       typeof req.body?.query === 'string' &&
       Buffer.byteLength(req.body.query, 'utf8') > 8192
     )
-      return res
-        .status(413)
-        .json({
-          statusCode: 413,
-          code: 'PAYLOAD_TOO_LARGE',
-          message: 'Request too large.',
-        });
+      return res.status(413).json({
+        statusCode: 413,
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'Request too large.',
+      });
     next();
   });
+  app.use(
+    '/analysis/access',
+    json({
+      limit: '8kb',
+      strict: true,
+      verify: (request, _response, buffer) => {
+        (request as typeof request & { rawBody?: Buffer }).rawBody =
+          Buffer.from(buffer);
+      },
+    }),
+  );
   app.useBodyParser('json', { limit: '8kb', strict: true });
   const origins = app.get(AuthConfig).browserOrigins;
   app.enableCors({

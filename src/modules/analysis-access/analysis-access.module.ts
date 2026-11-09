@@ -6,6 +6,7 @@ import { AnalysisAccessService } from './analysis-access.service';
 import { AnalysisConfig } from './analysis.config';
 import { AnalysisIdentityService } from './analysis-identity.service';
 import { AnalysisRegistryService } from './analysis-registry.service';
+import { AnalysisMediaService } from './analysis-media.service';
 import { AnalysisSocketService } from './analysis-socket.service';
 
 @Module({
@@ -13,6 +14,7 @@ import { AnalysisSocketService } from './analysis-socket.service';
   controllers: [AnalysisAccessController],
   providers: [
     AnalysisConfig,
+    AnalysisMediaService,
     AnalysisAccessService,
     AnalysisIdentityService,
     AnalysisRegistryService,

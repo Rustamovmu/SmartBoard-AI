@@ -1,6 +1,6 @@
 # Native connection foundation — version 1
 
-Implemented on 2026-11-09; see [verification](../docs/Analysis_transport_verification.md). This is a native-only connection foundation. No image analysis, worker, capture result, OCR or image-transfer codec is enabled. Both endpoints report `vision: false` and `acceptsFrames: false`.
+Implemented on 2026-11-09; see [verification](../docs/Analysis_transport_verification.md). This version-1 native connection foundation remains command-only: its grants and sockets report `vision: false` and `acceptsFrames: false`. A separate, explicitly opted-in [protocol-version-2 measurement bridge](analysis-media.md) can accept frames on version-2 analyze grants. It does not change V1 behavior or add capture decisions/save acknowledgments.
 
 ## Configuration and prerequisites
 

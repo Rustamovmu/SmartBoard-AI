@@ -13,7 +13,7 @@ import {
   type AnalysisEndpoint,
   type AnalysisGrant,
 } from '../../contracts/analysis-transport-v1';
-import { PROTOCOL_VERSION } from '../../contracts/platform-v1';
+import { MEDIA_CAPABILITIES } from '../../contracts/analysis-media-v2';
 import { digest } from '../auth/token.service';
 import { AnalysisConfig } from './analysis.config';
 import { AnalysisBusyException } from './analysis.errors';
@@ -29,6 +29,7 @@ export interface AnalysisPeer {
 }
 export interface AnalysisStream {
   readonly id: string;
+  readonly protocolVersion: 1 | 2;
   readonly binding: AnalysisBinding;
   readonly connectBefore: number;
   readonly tickets: Map<AnalysisEndpoint, string>;
@@ -45,7 +46,10 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
     string,
     { stream: AnalysisStream; endpoint: AnalysisEndpoint }
   >();
-  private readonly validationTimers = new Set<ReturnType<typeof setTimeout>>();
+  private readonly validationTimers = new Map<
+    ReturnType<typeof setTimeout>,
+    () => void
+  >();
   private timer?: ReturnType<typeof setInterval>;
   private stopping = false;
 
@@ -58,7 +62,7 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
     if (this.config.enabled) this.timer = setInterval(() => this.sweep(), 100);
   }
 
-  reserve(binding: AnalysisBinding): AnalysisGrant {
+  reserve(binding: AnalysisBinding, protocolVersion: 1 | 2 = 1): AnalysisGrant {
     if (this.stopping || !this.config.enabled)
       throw new ServiceUnavailableException();
     this.sweep();
@@ -76,6 +80,7 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
       throw new AnalysisBusyException();
     const stream: AnalysisStream = {
       id: randomUUID(),
+      protocolVersion,
       binding: { ...binding },
       connectBefore: Math.min(
         Date.now() + ANALYSIS_TRANSPORT.ticketLifetimeMs,
@@ -96,13 +101,14 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
       return raw;
     };
     return {
-      protocolVersion: PROTOCOL_VERSION,
+      protocolVersion,
       streamId: stream.id,
       connectBefore: new Date(stream.connectBefore).toISOString(),
       expiresAt: new Date(binding.expiresAt).toISOString(),
       analyzeTicket: issue('analyze'),
       controlTicket: issue('control'),
-      capabilities: ANALYSIS_CAPABILITIES,
+      capabilities:
+        protocolVersion === 2 ? MEDIA_CAPABILITIES : ANALYSIS_CAPABILITIES,
     };
   }
 
@@ -110,7 +116,10 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
     return !this.stopping && this.streams.get(stream.id) === stream;
   }
 
-  async validate(binding: AnalysisBinding) {
+  async validate(binding: AnalysisBinding, signal?: AbortSignal) {
+    if (this.stopping) throw new ServiceUnavailableException();
+    if (signal?.aborted) throw new UnauthorizedException();
+    let abort: (() => void) | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       await Promise.race([
@@ -120,14 +129,16 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
             : new ServiceUnavailableException();
         }),
         new Promise<never>((_, reject) => {
-          timer = setTimeout(
-            () => reject(new ServiceUnavailableException()),
-            ANALYSIS_TRANSPORT.validationTimeoutMs,
-          );
-          this.validationTimers.add(timer);
+          const cancel = () => reject(new ServiceUnavailableException());
+          timer = setTimeout(cancel, ANALYSIS_TRANSPORT.validationTimeoutMs);
+          this.validationTimers.set(timer, cancel);
+          abort = () => reject(new UnauthorizedException());
+          signal?.addEventListener('abort', abort, { once: true });
+          if (signal?.aborted) abort();
         }),
       ]);
     } finally {
+      if (abort) signal?.removeEventListener('abort', abort);
       if (timer) {
         clearTimeout(timer);
         this.validationTimers.delete(timer);
@@ -251,7 +262,10 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
     this.stopping = true;
     if (this.timer) clearInterval(this.timer);
     for (const stream of this.streams.values()) this.drop(stream, 'shutdown');
-    for (const timer of this.validationTimers) clearTimeout(timer);
+    for (const [timer, cancel] of this.validationTimers) {
+      clearTimeout(timer);
+      cancel();
+    }
     this.validationTimers.clear();
   }
 }

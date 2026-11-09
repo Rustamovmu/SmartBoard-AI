@@ -19,6 +19,8 @@ import {
 import { ANALYSIS_ERRORS, type AnalysisErrorCode } from './analysis.errors';
 import { AnalysisConfig } from './analysis.config';
 import { AnalysisRegistryService } from './analysis-registry.service';
+import { MEDIA_LIMITS } from '../../contracts/analysis-media-v2';
+import { AnalysisMediaService } from './analysis-media.service';
 import { AnalysisSocketPeer } from './analysis-socket-peer';
 
 @Injectable()
@@ -28,6 +30,11 @@ export class AnalysisSocketService
   private readonly server = new WebSocketServer({
     noServer: true,
     maxPayload: ANALYSIS_TRANSPORT.maxMessageBytes,
+    perMessageDeflate: false,
+  });
+  private readonly mediaServer = new WebSocketServer({
+    noServer: true,
+    maxPayload: MEDIA_LIMITS.requestBytes,
     perMessageDeflate: false,
   });
   private readonly peers = new Set<AnalysisSocketPeer>();
@@ -47,8 +54,10 @@ export class AnalysisSocketService
     private readonly adapter: HttpAdapterHost,
     private readonly config: AnalysisConfig,
     private readonly registry: AnalysisRegistryService,
+    private readonly media?: AnalysisMediaService,
   ) {
     this.server.on('error', () => undefined);
+    this.mediaServer.on('error', () => undefined);
   }
 
   onApplicationBootstrap() {
@@ -56,6 +65,7 @@ export class AnalysisSocketService
     const httpAdapter = this.adapter.httpAdapter;
     if (!httpAdapter) return;
     this.http = httpAdapter.getHttpServer() as Server;
+    this.media?.start();
     this.http.on('upgrade', this.upgrade);
     if (this.config.enabled)
       this.timer = setInterval(() => {
@@ -127,13 +137,18 @@ export class AnalysisSocketService
         throw new UnauthorizedException();
       const current = stream;
       let attached = false;
-      this.server.handleUpgrade(req, socket, head, (ws) => {
+      const server =
+        current.protocolVersion === 2 && endpoint === 'analyze'
+          ? this.mediaServer
+          : this.server;
+      server.handleUpgrade(req, socket, head, (ws) => {
         const peer = new AnalysisSocketPeer(
           ws,
           current,
           endpoint,
           this.registry,
           () => this.peers.delete(peer),
+          this.media,
         );
         attached = this.registry.attach(current, endpoint, peer);
         if (!attached) {
@@ -182,6 +197,11 @@ export class AnalysisSocketService
     for (const socket of this.upgrading) socket.destroy();
     this.upgrading.clear();
     for (const peer of this.peers) peer.close('shutdown');
-    await new Promise<void>((resolve) => this.server.close(() => resolve()));
+    await Promise.all(
+      [this.server, this.mediaServer].map(
+        (server) =>
+          new Promise<void>((resolve) => server.close(() => resolve())),
+      ),
+    );
   }
 }

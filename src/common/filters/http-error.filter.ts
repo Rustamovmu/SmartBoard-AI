@@ -10,7 +10,10 @@ import type { Response } from 'express';
 import type { HttpErrorResponse } from '../../contracts/platform-v1';
 import { safeGraphqlError } from '../../graphql/graphql-errors';
 import { UsernameTakenException } from '../../modules/members/username-taken.exception';
-import { AnalysisBusyException } from '../../modules/analysis-access/analysis.errors';
+import {
+  AnalysisBusyException,
+  VisionUnavailableException,
+} from '../../modules/analysis-access/analysis.errors';
 
 const ERRORS: Record<number, Omit<HttpErrorResponse, 'statusCode'>> = {
   400: { code: 'VALIDATION_ERROR', message: 'Invalid request.' },
@@ -62,13 +65,18 @@ export class HttpErrorFilter implements ExceptionFilter {
               code: 'ANALYSIS_BUSY',
               message: 'Analysis connection capacity reached.',
             }
-          : (ERRORS[statusCode] ?? {
-              code: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_REJECTED',
-              message:
-                statusCode >= 500
-                  ? 'Internal server error.'
-                  : 'Request rejected.',
-            });
+          : exception instanceof VisionUnavailableException
+            ? {
+                code: 'VISION_UNAVAILABLE',
+                message: 'Vision processing is unavailable.',
+              }
+            : (ERRORS[statusCode] ?? {
+                code: statusCode >= 500 ? 'INTERNAL_ERROR' : 'REQUEST_REJECTED',
+                message:
+                  statusCode >= 500
+                    ? 'Internal server error.'
+                    : 'Request rejected.',
+              });
 
     if (statusCode >= 500) this.logger.error(`HTTP failure: ${statusCode}`);
 
