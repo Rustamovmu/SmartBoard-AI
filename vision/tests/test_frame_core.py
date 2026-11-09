@@ -39,12 +39,15 @@ def test_actual_rectified_and_enhanced_bytes_are_independent_of_source_and_never
     assert original.shape == enhanced.shape == board.shape
     assert np.abs(original.astype(float) - board).mean() < 4
     assert result.rectified_jpeg != result.enhanced_jpeg
+    assert len(result.comparison_signature) == 48 * 32
     assert result.people.status == "unavailable"
     assert result.person_box_overlap_fraction is None
     assert result.visibility == "unknown"
     assert result.tracking == "unverified"
     assert result.automatic_capture_eligible is False
-    assert "rectified_jpeg" not in repr(result) and "enhanced_jpeg" not in repr(result)
+    assert "rectified_jpeg" not in repr(result)
+    assert "enhanced_jpeg" not in repr(result)
+    assert "comparison_signature" not in repr(result)
     assert result.quality.ink_density > 0
     assert result.quality.sharpness > 0
     core.close()

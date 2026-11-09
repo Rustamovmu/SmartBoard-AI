@@ -21,6 +21,7 @@ import { AnalysisConfig } from './analysis.config';
 import { AnalysisRegistryService } from './analysis-registry.service';
 import { MEDIA_LIMITS } from '../../contracts/analysis-media-v2';
 import { AnalysisMediaService } from './analysis-media.service';
+import { AnalysisCandidateService } from './analysis-decision-v3';
 import { AnalysisSocketPeer } from './analysis-socket-peer';
 
 @Injectable()
@@ -55,6 +56,7 @@ export class AnalysisSocketService
     private readonly config: AnalysisConfig,
     private readonly registry: AnalysisRegistryService,
     private readonly media?: AnalysisMediaService,
+    private readonly candidates?: AnalysisCandidateService,
   ) {
     this.server.on('error', () => undefined);
     this.mediaServer.on('error', () => undefined);
@@ -138,7 +140,7 @@ export class AnalysisSocketService
       const current = stream;
       let attached = false;
       const server =
-        current.protocolVersion === 2 && endpoint === 'analyze'
+        current.protocolVersion >= 2 && endpoint === 'analyze'
           ? this.mediaServer
           : this.server;
       server.handleUpgrade(req, socket, head, (ws) => {
@@ -149,6 +151,7 @@ export class AnalysisSocketService
           this.registry,
           () => this.peers.delete(peer),
           this.media,
+          this.candidates,
         );
         attached = this.registry.attach(current, endpoint, peer);
         if (!attached) {

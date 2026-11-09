@@ -1,4 +1,4 @@
-import { MEDIA_CAPABILITIES } from './analysis-media-v2';
+import { DECISION_CAPABILITIES, MEDIA_CAPABILITIES } from './analysis-media-v2';
 import { PROTOCOL_VERSION } from './platform-v1';
 
 export const ANALYSIS_TRANSPORT = {
@@ -20,24 +20,27 @@ export const ANALYSIS_CAPABILITIES = {
 } as const;
 export type AnalysisEndpoint = 'analyze' | 'control';
 export type AnalysisCommand = {
-  protocolVersion: 1 | 2;
+  protocolVersion: 1 | 2 | 3;
   streamId: string;
   type: 'heartbeat' | 'status' | 'close';
 };
 export interface AnalysisGrant {
-  protocolVersion: 1 | 2;
+  protocolVersion: 1 | 2 | 3;
   streamId: string;
   connectBefore: string;
   expiresAt: string;
   analyzeTicket: string;
   controlTicket: string;
-  capabilities: typeof ANALYSIS_CAPABILITIES | typeof MEDIA_CAPABILITIES;
+  capabilities:
+    | typeof ANALYSIS_CAPABILITIES
+    | typeof MEDIA_CAPABILITIES
+    | typeof DECISION_CAPABILITIES;
 }
 
 export function isAnalysisCommand(
   value: unknown,
   streamId: string,
-  protocolVersion: 1 | 2 = PROTOCOL_VERSION,
+  protocolVersion: 1 | 2 | 3 = PROTOCOL_VERSION,
 ): value is AnalysisCommand {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const input = value as Record<string, unknown>;

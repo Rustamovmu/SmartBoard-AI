@@ -2,6 +2,8 @@
 
 Implemented on 2026-11-09; see [dated verification](../docs/Analysis_media_verification.md). This adds authenticated, bounded JPEG measurement to the existing native connection foundation. It returns actual rectified/enhanced frames and measurements; it does not decide or save captures. The [V1 connection contract](analysis-transport.md) remains unchanged for `{}` grants, and control sockets remain command-only.
 
+Protocol version 3 reuses this bounded worker path and adds the separate [mounted-camera candidate/acknowledgment lifecycle](analysis-decision-v3.md). Version 2 behavior and result bytes remain unchanged.
+
 ## Configuration and startup
 
 - `ANALYSIS_TRANSPORT_ENABLED` and `ANALYSIS_MEDIA_ENABLED` accept exactly `true` or `false`, default to `false`, and media cannot be enabled unless transport is enabled. Both must be explicitly enabled in a verification host.

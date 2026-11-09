@@ -13,7 +13,10 @@ import {
   type AnalysisEndpoint,
   type AnalysisGrant,
 } from '../../contracts/analysis-transport-v1';
-import { MEDIA_CAPABILITIES } from '../../contracts/analysis-media-v2';
+import {
+  DECISION_CAPABILITIES,
+  MEDIA_CAPABILITIES,
+} from '../../contracts/analysis-media-v2';
 import { digest } from '../auth/token.service';
 import { AnalysisConfig } from './analysis.config';
 import { AnalysisBusyException } from './analysis.errors';
@@ -29,7 +32,7 @@ export interface AnalysisPeer {
 }
 export interface AnalysisStream {
   readonly id: string;
-  readonly protocolVersion: 1 | 2;
+  readonly protocolVersion: 1 | 2 | 3;
   readonly binding: AnalysisBinding;
   readonly connectBefore: number;
   readonly tickets: Map<AnalysisEndpoint, string>;
@@ -62,7 +65,10 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
     if (this.config.enabled) this.timer = setInterval(() => this.sweep(), 100);
   }
 
-  reserve(binding: AnalysisBinding, protocolVersion: 1 | 2 = 1): AnalysisGrant {
+  reserve(
+    binding: AnalysisBinding,
+    protocolVersion: 1 | 2 | 3 = 1,
+  ): AnalysisGrant {
     if (this.stopping || !this.config.enabled)
       throw new ServiceUnavailableException();
     this.sweep();
@@ -108,7 +114,11 @@ export class AnalysisRegistryService implements OnModuleInit, OnModuleDestroy {
       analyzeTicket: issue('analyze'),
       controlTicket: issue('control'),
       capabilities:
-        protocolVersion === 2 ? MEDIA_CAPABILITIES : ANALYSIS_CAPABILITIES,
+        protocolVersion === 3
+          ? DECISION_CAPABILITIES
+          : protocolVersion === 2
+            ? MEDIA_CAPABILITIES
+            : ANALYSIS_CAPABILITIES,
     };
   }
 

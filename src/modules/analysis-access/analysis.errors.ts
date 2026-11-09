@@ -23,6 +23,7 @@ export const ANALYSIS_ERRORS = {
   FORBIDDEN: 'Access denied.',
   VALIDATION_ERROR: 'Invalid request.',
   ANALYSIS_BUSY: 'Analysis connection capacity reached.',
+  STALE_CANDIDATE: 'Candidate is no longer available.',
   VISION_UNAVAILABLE: 'Vision processing is unavailable.',
   SERVICE_UNAVAILABLE: 'Service unavailable.',
 } as const;

@@ -265,7 +265,7 @@ Shared server routes:
 | POST /auth/password/reset | Consume an operator-issued recovery proof; require normal login afterward |
 | POST /graphql | Accounts, enrollment, published help/community and admin |
 | POST /analysis/access | Implemented default-off native connection tickets; no media |
-| WSS /ws/analyze | Implemented connection/status; frames/results/save acknowledgments remain planned |
+| WSS /ws/analyze | Implemented version-2 measurements and version-3 mounted candidates/save acknowledgments; default-off |
 | WSS /ws/control | Implemented native connection/status/revocation without lecture data |
 | GET /health/live, /health/ready | Service readiness |
 
@@ -317,4 +317,4 @@ The backend adds an opt-in protocol-version-2 grant and isolated Python worker b
 
 ## 2026-11-09 — Standalone CPU frame worker boundary
 
-A separate backend [Python frame core](../contracts/vision-worker.md) now accepts bounded in-memory JPEG bytes plus confirmed source geometry and returns actual rectified/enhanced bytes, appearance measurements and fresh CPU YOLO11n person boxes/overlap. It is not connected to `/ws/analyze`; current socket capabilities remain `vision: false` / `acceptsFrames: false`. Its tracking is unverified and automatic capture is always false. No mobile/website source, auth bridge, calibration/tracking UI, candidate codec, save acknowledgment or phone-local files changed. Do not wire mobile uploads or show Saved/AI success from this standalone milestone; the authenticated process bridge, decision lifecycle and physical-device validation remain separate work.
+A separate backend [Python frame core](../contracts/vision-worker.md) now accepts bounded in-memory JPEG bytes plus confirmed source geometry and returns actual rectified/enhanced bytes, appearance measurements and fresh CPU YOLO11n person boxes/overlap. It is connected to `/ws/analyze` by the default-off authenticated media bridge. The backend now also adds the default-off protocol-version-3 [mounted-camera decision lifecycle](../contracts/analysis-decision-v3.md): the phone supplies its accepted baseline; bounded quality/person/corner/stability gates produce a transient retryable candidate; the server advances its RAM comparison baseline only after matching `localSaveAcknowledged`. No mobile client or durable phone save, handheld tracker, automatic capture loop, browser socket or production deployment is implemented. Do not show Saved until a separate phone implementation commits the image and local catalog. Synthetic disposable-database loopback verification does not establish camera accuracy or phone persistence.

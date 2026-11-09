@@ -10,27 +10,36 @@ export const MEDIA_LIMITS = {
   startupMs: 20_000,
   jobMs: 10_000,
   replacementMs: 1000,
+  signatureBytes: 1536,
 } as const;
 export const MEDIA_CAPABILITIES = {
   vision: true,
   acceptsFrames: true,
   automaticCapture: false,
 } as const;
+export const DECISION_CAPABILITIES = {
+  vision: true,
+  acceptsFrames: true,
+  captureCandidates: true,
+  automaticCapture: false,
+} as const;
 export interface MediaFrame {
-  protocolVersion: 2;
-  type: 'frame';
+  protocolVersion: 2 | 3;
+  type: 'frame' | 'baseline';
   streamId: string;
   frameId: number;
   sourceTimeMs: number;
   width: number;
   height: number;
   corners: number[][];
+  captureMode?: 'mounted';
   jpeg: Buffer;
 }
 export interface MediaResult {
   measurements: Record<string, unknown>;
   rectified: Buffer;
   enhanced: Buffer;
+  comparisonSignature: Buffer;
 }
 export function record(
   value: unknown,
@@ -171,6 +180,67 @@ export function parseMediaFrame(
     width: value.width,
     height: value.height,
     corners: value.corners,
+    jpeg,
+  };
+}
+export function parseDecisionFrame(
+  bytes: Buffer,
+  streamId: string,
+  lastId: number,
+  lastTime: number,
+): MediaFrame {
+  if (bytes.length < 5 || bytes.length > MEDIA_LIMITS.requestBytes)
+    throw new Error('Invalid frame.');
+  const length = bytes.readUInt32BE(0);
+  if (
+    length < 1 ||
+    length > MEDIA_LIMITS.requestHeaderBytes ||
+    bytes.length <= length + 4
+  )
+    throw new Error('Invalid frame.');
+  const value = strictJson(bytes.subarray(4, length + 4));
+  if (
+    !record(value, [
+      'protocolVersion',
+      'type',
+      'streamId',
+      'frameId',
+      'sourceTimeMs',
+      'width',
+      'height',
+      'corners',
+      'captureMode',
+    ]) ||
+    value.protocolVersion !== 3 ||
+    !['frame', 'baseline'].includes(value.type as string) ||
+    value.streamId !== streamId ||
+    value.captureMode !== 'mounted' ||
+    !integerIn(value.frameId, 1, Number.MAX_SAFE_INTEGER) ||
+    value.frameId <= lastId ||
+    !numberIn(value.sourceTimeMs, 0, 1e12) ||
+    value.sourceTimeMs < lastTime ||
+    !integerIn(value.width, 32, 8192) ||
+    !integerIn(value.height, 32, 8192) ||
+    value.width * value.height > 16_000_000 ||
+    !validCorners(value.corners)
+  )
+    throw new Error('Invalid frame.');
+  const jpeg = bytes.subarray(length + 4);
+  if (
+    jpeg.length > MEDIA_LIMITS.jpegBytes ||
+    !jpegDimensions(jpeg, value.width, value.height)
+  )
+    throw new Error('Invalid frame.');
+  return {
+    protocolVersion: 3,
+    type: value.type as 'frame' | 'baseline',
+    streamId,
+    frameId: value.frameId,
+    sourceTimeMs: value.sourceTimeMs,
+    width: value.width,
+    height: value.height,
+    corners: value.corners,
+    captureMode: 'mounted',
     jpeg,
   };
 }
@@ -327,6 +397,32 @@ export function encodeMediaResult(
   );
   if (header.length > MEDIA_LIMITS.resultHeaderBytes)
     throw new Error('Invalid result.');
+  const prefix = Buffer.alloc(4);
+  prefix.writeUInt32BE(header.length);
+  return Buffer.concat([prefix, header, result.rectified, result.enhanced]);
+}
+export function encodeDecisionCandidate(
+  frame: MediaFrame,
+  result: MediaResult,
+  candidateId: string,
+  expiresAt: string,
+): Buffer {
+  const header = Buffer.from(
+    JSON.stringify({
+      protocolVersion: 3,
+      type: 'candidate',
+      streamId: frame.streamId,
+      candidateId,
+      frameId: frame.frameId,
+      sourceTimeMs: frame.sourceTimeMs,
+      expiresAt,
+      rectifiedBytes: result.rectified.length,
+      enhancedBytes: result.enhanced.length,
+      measurements: result.measurements,
+    }),
+  );
+  if (header.length > MEDIA_LIMITS.resultHeaderBytes)
+    throw new Error('Invalid candidate.');
   const prefix = Buffer.alloc(4);
   prefix.writeUInt32BE(header.length);
   return Buffer.concat([prefix, header, result.rectified, result.enhanced]);

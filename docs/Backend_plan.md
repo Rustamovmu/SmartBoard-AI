@@ -161,18 +161,18 @@ Public community publishing is a separate intentional action. Community posts V1
 
 ## 7. RAM-only connected analysis contract
 
-The [native connection foundation](../contracts/analysis-transport.md) implements grants and bounded analyze/control sockets behind a default-off flag. A separate default-off [protocol-version-2 media bridge](../contracts/analysis-media.md) now forwards selected frames from authenticated enrolled native analyze sockets to isolated CPU Python workers and returns real measurements/derived image bytes. The standalone CPU frame worker measures confirmed geometry, appearance and current real person boxes in RAM. Tracking, stability/change decisions and candidate/save acknowledgments below remain future requirements; the bridge does not authorize automatic captures. See the dated verification records rather than interpreting this target sequence as current behavior.
+The [native connection foundation](../contracts/analysis-transport.md), default-off [version-2 media bridge](../contracts/analysis-media.md), and default-off [version-3 mounted-camera decision lifecycle](../contracts/analysis-decision-v3.md) are implemented. Version 3 compares a transient rectified grayscale signature against a phone-supplied baseline, applies bounded quality/person/corner/stability gates, and returns a retryable candidate. Only an acknowledgment for the active candidate advances the in-memory baseline. Phone-side saving, robust handheld tracking, physical-camera validation and production/deployment retention review remain future work; no automatic capture is authorized. See dated verification records rather than treating target requirements as completed behavior.
 
 1. Phone creates a local lecture and persistent local destination before opening analysis.
 2. After authentication, the backend grants a short-lived, stream-scoped analysis permission. No lecture record is created in MongoDB.
 3. Phone sends selected compressed JPEG frames, capped at 2 MB and 16 million decoded pixels, with an ephemeral stream ID, frame ID and monotonic/source timestamp.
 4. Nest forwards validated bytes directly to Python in memory. Keep one in-flight frame and a bounded queue; apply backpressure rather than saving a backlog.
-5. Python calculates calibrated/tracked board coordinates, quality, motion/stability, actual person boxes/overlap, SSIM and pixel/edge/ink changes.
+5. The current mounted mode compares a 48×32 rectified-grayscale signature, checks supplied-corner drift, measured quality and fresh person inference, then requires two seconds of stable meaningful change. It does not claim camera calibration or handheld tracking.
 6. For an accepted candidate, return actual rectified/enhanced image bytes plus calculated measurements to the phone. Keep the candidate only in bounded RAM until acknowledged/expired.
 7. The phone writes the images and local metadata, verifies the local save, and sends localSaveAcknowledged with the same candidate ID. Only the phone may show “Saved on this phone.”
 8. Worker advances its comparison baseline after that acknowledgment. Lost messages/retries are resolved against the device's idempotent local catalog, not a server capture archive.
 9. Phone owns the durable baseline. After reconnect/worker restart it can resend the required baseline with permission; reset temporal stability.
-10. Clear stream/candidate buffers on disconnect, logout, revocation or a 30-second inactivity timeout. Limit active sessions and measure actual memory use.
+10. Clear stream/candidate buffers on disconnect, logout, revocation, expiry or a 30-second inactivity timeout. Limit active sessions and measure actual memory use.
 
 Default analysis targets remain five sampled frames per second, approximately two seconds of stability and a three-second capture interval. Fresh YOLO inference must gate automatic candidates when available. A stationary detected obstruction still blocks saving.
 
@@ -207,7 +207,7 @@ Both plan documents use these routes:
 | Password recovery | POST /auth/password/reset: consumes a short-lived proof issued by an explicit local operator command; no public issuer or email delivery is assumed |
 | GraphQL | POST /graphql: accounts, enrollment, published help/community and admin operations only |
 | Analysis authorization | POST /analysis/access: implemented native endpoint-specific connection tickets; disabled by default |
-| Frame processing | WSS /ws/analyze: implemented connection/status only; frames/results/local-save acknowledgments remain planned |
+| Frame processing | WSS /ws/analyze: version-2 measurements and version-3 mounted candidates/save acknowledgments implemented, default-off |
 | Enrollment/status | WSS /ws/control: implemented native connection/status/revocation, no private lecture feed |
 | Health | GET /health/live, /health/ready |
 

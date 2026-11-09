@@ -198,16 +198,29 @@ export class AnalysisMediaService implements OnModuleDestroy {
             'rectifiedBytes',
             'enhancedBytes',
             'measurements',
+            'comparisonSignature',
           ]) ||
           header.protocolVersion !== 1 ||
           header.type !== 'result' ||
           header.requestId !== job.id ||
           !integerIn(header.rectifiedBytes, 1, MEDIA_LIMITS.jpegBytes) ||
           !integerIn(header.enhancedBytes, 1, MEDIA_LIMITS.jpegBytes) ||
+          typeof header.comparisonSignature !== 'string' ||
+          !/^[A-Za-z0-9+/]+$/.test(header.comparisonSignature) ||
           !validMeasurements(header.measurements, job.frame)
         )
           throw new Error();
+        const comparisonSignature = Buffer.from(
+          header.comparisonSignature,
+          'base64',
+        );
+        if (
+          comparisonSignature.length !== MEDIA_LIMITS.signatureBytes ||
+          comparisonSignature.toString('base64') !== header.comparisonSignature
+        )
+          throw new Error();
         slot.header = header;
+        slot.header.comparisonSignature = comparisonSignature;
         slot.total =
           headerLength + 4 + header.rectifiedBytes + header.enhancedBytes;
       }
@@ -225,6 +238,7 @@ export class AnalysisMediaService implements OnModuleDestroy {
         slot.used,
       );
       const measurements = header.measurements as Record<string, unknown>;
+      const comparisonSignature = header.comparisonSignature as Buffer;
       if (
         !jpegDimensions(
           rectified,
@@ -239,7 +253,7 @@ export class AnalysisMediaService implements OnModuleDestroy {
       )
         throw new Error();
       job.complete = true;
-      job.resolve!({ measurements, rectified, enhanced });
+      job.resolve!({ measurements, rectified, enhanced, comparisonSignature });
     } catch {
       this.retire(slot, slot.ready);
     } finally {
@@ -314,10 +328,7 @@ export class AnalysisMediaService implements OnModuleDestroy {
           return;
         }
         this.clearJob(slot);
-        slot.storage.fill(0);
-        slot.used = 0;
-        slot.header = undefined;
-        slot.total = undefined;
+        this.clearResponse(slot);
       },
       cancel: () => {
         if (slot.job === job) this.retire(slot, true);
@@ -334,6 +345,14 @@ export class AnalysisMediaService implements OnModuleDestroy {
     job.frame = undefined;
     slot.job = undefined;
   }
+  private clearResponse(slot: Slot) {
+    const signature = slot.header?.comparisonSignature;
+    if (Buffer.isBuffer(signature)) signature.fill(0);
+    slot.storage.fill(0);
+    slot.used = 0;
+    slot.header = undefined;
+    slot.total = undefined;
+  }
   private retire(
     slot: Slot,
     replacement: boolean,
@@ -349,9 +368,7 @@ export class AnalysisMediaService implements OnModuleDestroy {
       job.reject?.(reason);
       this.clearJob(slot);
     }
-    slot.storage.fill(0);
-    slot.used = 0;
-    slot.header = undefined;
+    this.clearResponse(slot);
     // Never free the physical slot until close: a kill request is not an exit.
     slot.child.kill('SIGKILL');
     slot.child.stdin.destroy();

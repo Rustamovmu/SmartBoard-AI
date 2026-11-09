@@ -44,6 +44,10 @@ interface Wire {
   protocolVersion: number;
   streamId: string;
   code?: string;
+  message?: string;
+  candidateId?: string;
+  state?: string;
+  repeated?: boolean;
   capabilities?: object;
 }
 interface Client {
@@ -69,6 +73,7 @@ describe('authenticated measurement bridge with real workers and disposable Mong
     pythonExecutable: resolve('vision/.venv/bin/python'),
   };
   let jpeg: Buffer;
+  let changedJpeg: Buffer;
   let media: AnalysisMediaService;
   const clients: Client[] = [];
   const native = { 'X-SmartBord-Client': 'native' };
@@ -192,6 +197,40 @@ describe('authenticated measurement bridge with real workers and disposable Mong
     prefix.writeUInt32BE(header.length);
     return Buffer.concat([prefix, header, image]);
   };
+  const decisionPacket = (
+    client: Client,
+    type: 'baseline' | 'frame',
+    id: number,
+    image: Buffer,
+  ) => {
+    const header = Buffer.from(
+      JSON.stringify({
+        protocolVersion: 3,
+        type,
+        streamId: client.messages[0].streamId,
+        frameId: id,
+        sourceTimeMs: id * 100,
+        width: 320,
+        height: 240,
+        corners: [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 1],
+        ],
+        captureMode: 'mounted',
+      }),
+    );
+    const prefix = Buffer.alloc(4);
+    prefix.writeUInt32BE(header.length);
+    return Buffer.concat([prefix, header, image]);
+  };
+  const decisionGrant = async (token: string): Promise<AnalysisGrant> =>
+    (
+      await access(token, { protocolVersion: 3 })
+        .expect(201)
+        .expect('Cache-Control', 'no-store')
+    ).body;
   const measure = async (client: Client, id = 1) => {
     client.ws.send(packet(client, id));
     await until(() => client.results.length >= id);
@@ -244,6 +283,19 @@ describe('authenticated measurement bridge with real workers and disposable Mong
         '-B',
         '-c',
         'import cv2,numpy as np,sys; a=np.full((240,320,3),235,np.uint8);cv2.putText(a,"SYNTHETIC BRIDGE",(10,100),cv2.FONT_HERSHEY_SIMPLEX,.6,(20,20,20),2);sys.stdout.buffer.write(cv2.imencode(".jpg",a)[1].tobytes())',
+      ],
+      {
+        env: { PATH: process.env.PATH ?? '/usr/bin:/bin' },
+        maxBuffer: 2_000_000,
+        timeout: 10_000,
+      },
+    );
+    changedJpeg = execFileSync(
+      config.pythonExecutable,
+      [
+        '-B',
+        '-c',
+        'import cv2,numpy as np,sys; a=np.full((240,320,3),235,np.uint8);cv2.rectangle(a,(20,25),(170,210),(15,15,15),-1);cv2.rectangle(a,(190,35),(295,115),(80,80,80),-1);cv2.putText(a,"SYNTHETIC CHANGE",(30,235),cv2.FONT_HERSHEY_SIMPLEX,.55,(5,5,5),2);sys.stdout.buffer.write(cv2.imencode(".jpg",a)[1].tobytes())',
       ],
       {
         env: { PATH: process.env.PATH ?? '/usr/bin:/bin' },
@@ -312,6 +364,7 @@ describe('authenticated measurement bridge with real workers and disposable Mong
       if (app) await app.close();
     } finally {
       jpeg?.fill(0);
+      changedJpeg?.fill(0);
       try {
         if (owned) await dropOwnedTestDatabase(connection, name);
       } finally {
@@ -386,6 +439,163 @@ describe('authenticated measurement bridge with real workers and disposable Mong
     await measure(client);
     await measure(client, 2);
     expect(media.processCount).toBeLessThanOrEqual(2);
+  });
+  it('holds the phone baseline until the mounted-camera candidate is acknowledged', async () => {
+    const owner = await fixture();
+    const issued = await decisionGrant(owner.target.accessToken);
+    expect(issued).toMatchObject({
+      protocolVersion: 3,
+      capabilities: {
+        vision: true,
+        acceptsFrames: true,
+        captureCandidates: true,
+        automaticCapture: false,
+      },
+    });
+    const client = await open(issued.analyzeTicket);
+    expect(client.messages[0].capabilities).toMatchObject({
+      captureCandidates: true,
+      automaticCapture: false,
+    });
+    const control = await open(issued.controlTicket, 'control');
+    expect(control.messages[0].capabilities).toMatchObject({
+      acceptsFrames: false,
+      captureCandidates: false,
+    });
+    control.ws.send(
+      JSON.stringify({
+        protocolVersion: 3,
+        streamId: control.messages[0].streamId,
+        type: 'candidateRequest',
+        candidateId: randomUUID(),
+      }),
+    );
+    expect(await control.closed).toBe(1008);
+    const statusCount = () =>
+      client.messages.filter((m) => m.type === 'status').length;
+    client.ws.send(decisionPacket(client, 'baseline', 1, jpeg));
+    await until(() =>
+      client.messages.some((m) => m.state === 'baseline_accepted'),
+    );
+    client.ws.send(decisionPacket(client, 'frame', 2, changedJpeg));
+    await until(() => client.messages.some((m) => m.state === 'stabilizing'));
+    await delay(2_100);
+    client.ws.send(decisionPacket(client, 'frame', 3, changedJpeg));
+    await until(() => client.results.length === 1);
+    const firstPacket = client.results[0];
+    const headerBytes = firstPacket.readUInt32BE(0);
+    const candidateHeader = JSON.parse(
+      firstPacket.subarray(4, 4 + headerBytes).toString('utf8'),
+    ) as {
+      candidateId: string;
+      enhancedBytes: number;
+      rectifiedBytes: number;
+      type: string;
+    };
+    expect(candidateHeader.type).toBe('candidate');
+    expect(firstPacket.length).toBe(
+      4 +
+        headerBytes +
+        candidateHeader.rectifiedBytes +
+        candidateHeader.enhancedBytes,
+    );
+    expect(firstPacket.subarray(4 + headerBytes, 4 + headerBytes + 2)).toEqual(
+      Buffer.from([255, 216]),
+    );
+    const enhancedOffset = 4 + headerBytes + candidateHeader.rectifiedBytes;
+    expect(firstPacket.subarray(enhancedOffset, enhancedOffset + 2)).toEqual(
+      Buffer.from([255, 216]),
+    );
+    expect(candidateHeader.candidateId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    const candidateId = candidateHeader.candidateId;
+    const saveRequestId = randomUUID();
+    client.ws.send(
+      JSON.stringify({
+        protocolVersion: 3,
+        streamId: client.messages[0].streamId,
+        type: 'localSaveAcknowledged',
+        candidateId: randomUUID(),
+        saveRequestId: randomUUID(),
+      }),
+    );
+    await until(() =>
+      client.messages.some((m) => m.code === 'STALE_CANDIDATE'),
+    );
+    expect(client.results).toHaveLength(1);
+    client.ws.send(
+      JSON.stringify({
+        protocolVersion: 3,
+        streamId: client.messages[0].streamId,
+        type: 'candidateRequest',
+        candidateId,
+      }),
+    );
+    await until(() => client.results.length === 2);
+    expect(client.results[1]).toEqual(firstPacket);
+    const acknowledged = {
+      protocolVersion: 3,
+      streamId: client.messages[0].streamId,
+      type: 'localSaveAcknowledged',
+      candidateId,
+      saveRequestId,
+    };
+    client.ws.send(JSON.stringify(acknowledged));
+    await until(() =>
+      client.messages.some(
+        (m) => m.state === 'candidate_saved' && m.repeated === false,
+      ),
+    );
+    client.ws.send(JSON.stringify(acknowledged));
+    await until(() =>
+      client.messages.some(
+        (m) => m.state === 'candidate_saved' && m.repeated === true,
+      ),
+    );
+    const beforeUnchanged = statusCount();
+    await delay(1_100);
+    client.ws.send(decisionPacket(client, 'frame', 4, changedJpeg));
+    await until(
+      () =>
+        client.messages.length > beforeUnchanged &&
+        client.messages.at(-1)?.state === 'unchanged',
+    );
+    expect(client.results).toHaveLength(2);
+    client.ws.send(decisionPacket(client, 'frame', 5, jpeg));
+    await until(() => client.messages.at(-1)?.state === 'stabilizing');
+    await delay(2_100);
+    client.ws.send(decisionPacket(client, 'frame', 6, jpeg));
+    await until(() => client.results.length === 3);
+    const secondLength = client.results[2].readUInt32BE(0);
+    const secondHeader = JSON.parse(
+      client.results[2].subarray(4, 4 + secondLength).toString('utf8'),
+    ) as { candidateId: string };
+    const secondAck = {
+      protocolVersion: 3,
+      streamId: client.messages[0].streamId,
+      type: 'localSaveAcknowledged',
+      candidateId: secondHeader.candidateId,
+      saveRequestId: randomUUID(),
+    };
+    client.ws.send(JSON.stringify(secondAck));
+    await until(() =>
+      client.messages.some(
+        (m) =>
+          m.state === 'candidate_saved' &&
+          m.candidateId === secondHeader.candidateId &&
+          m.repeated === false,
+      ),
+    );
+    client.ws.send(JSON.stringify(acknowledged));
+    await until(() =>
+      client.messages.some(
+        (m) =>
+          m.state === 'candidate_saved' &&
+          m.candidateId === candidateId &&
+          m.repeated === true,
+      ),
+    );
   });
   it.each([
     ['unknown fields', { notes: 'synthetic-private-marker' }],

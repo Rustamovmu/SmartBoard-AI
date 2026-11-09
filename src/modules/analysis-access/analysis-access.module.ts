@@ -7,6 +7,7 @@ import { AnalysisConfig } from './analysis.config';
 import { AnalysisIdentityService } from './analysis-identity.service';
 import { AnalysisRegistryService } from './analysis-registry.service';
 import { AnalysisMediaService } from './analysis-media.service';
+import { AnalysisCandidateService } from './analysis-decision-v3';
 import { AnalysisSocketService } from './analysis-socket.service';
 
 @Module({
@@ -15,6 +16,7 @@ import { AnalysisSocketService } from './analysis-socket.service';
   providers: [
     AnalysisConfig,
     AnalysisMediaService,
+    AnalysisCandidateService,
     AnalysisAccessService,
     AnalysisIdentityService,
     AnalysisRegistryService,

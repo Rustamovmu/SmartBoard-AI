@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+import base64
 import json
 import math
 import os
@@ -263,6 +264,9 @@ def process_request(
                 "rectifiedBytes": len(rectified),
                 "enhancedBytes": len(enhanced),
                 "measurements": result_measurements(result),
+                "comparisonSignature": base64.b64encode(
+                    result.comparison_signature
+                ).decode("ascii"),
             },
         )
         _write_all(destination, rectified)
@@ -272,6 +276,8 @@ def process_request(
         clear(body)
         clear(rectified)
         clear(enhanced)
+        if result is not None:
+            clear(result.comparison_signature)
         result = None
 
 

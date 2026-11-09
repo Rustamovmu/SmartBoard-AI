@@ -84,6 +84,7 @@ class FrameResult:
     rectified_height: int
     rectified_jpeg: bytes = field(repr=False)
     enhanced_jpeg: bytes = field(repr=False)
+    comparison_signature: bytearray = field(repr=False)
     quality: Quality
     people: PersonResult
     person_box_overlap_fraction: float | None

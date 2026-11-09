@@ -1,5 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { parseMediaFrame, strictJson } from './analysis-media-v2';
+import {
+  encodeDecisionCandidate,
+  parseDecisionFrame,
+  parseMediaFrame,
+  strictJson,
+  type MediaResult,
+} from './analysis-media-v2';
 
 const jpeg320x240 = Buffer.from([
   0xff, 0xd8, 0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0xf0, 0x01, 0x40, 0x01, 0x01,
@@ -28,6 +34,14 @@ function header(streamId = randomUUID()) {
       [1, 1],
       [0, 1],
     ],
+  };
+}
+function decisionHeader(streamId = randomUUID(), type = 'frame') {
+  return {
+    ...header(streamId),
+    protocolVersion: 3,
+    type,
+    captureMode: 'mounted',
   };
 }
 
@@ -90,5 +104,68 @@ describe('bounded native media envelopes', () => {
         0,
       ),
     ).toThrow();
+  });
+
+  it('requires mounted mode and distinguishes the phone-owned baseline packet', () => {
+    const streamId = randomUUID();
+    const parsed = parseDecisionFrame(
+      packet(decisionHeader(streamId, 'baseline')),
+      streamId,
+      0,
+      0,
+    );
+    expect(parsed).toMatchObject({ protocolVersion: 3, type: 'baseline' });
+    expect(() =>
+      parseDecisionFrame(
+        packet({ ...decisionHeader(streamId), captureMode: 'handheld' }),
+        streamId,
+        0,
+        0,
+      ),
+    ).toThrow();
+  });
+
+  it('encodes candidate identity and both actual derived image buffers', () => {
+    const streamId = randomUUID();
+    const mediaFrame = parseDecisionFrame(
+      packet(decisionHeader(streamId)),
+      streamId,
+      0,
+      0,
+    );
+    const result: MediaResult = {
+      measurements: {
+        tracking: 'unverified',
+        automatic_capture_eligible: false,
+      },
+      rectified: Buffer.from([255, 216, 255, 217]),
+      enhanced: Buffer.from([255, 216, 255, 217]),
+      comparisonSignature: Buffer.alloc(1536),
+    };
+    const candidateId = randomUUID();
+    const output = encodeDecisionCandidate(
+      mediaFrame,
+      result,
+      candidateId,
+      '2026-11-09T00:00:30.000Z',
+    );
+    const headerBytes = output.readUInt32BE(0);
+    const parsed = JSON.parse(
+      output.subarray(4, headerBytes + 4).toString('utf8'),
+    );
+    expect(parsed).toMatchObject({
+      protocolVersion: 3,
+      type: 'candidate',
+      streamId,
+      candidateId,
+      frameId: 1,
+      rectifiedBytes: 4,
+      enhancedBytes: 4,
+    });
+    expect(output.subarray(4 + headerBytes)).toEqual(
+      Buffer.from([255, 216, 255, 217, 255, 216, 255, 217]),
+    );
+    output.fill(0);
+    result.comparisonSignature.fill(0);
   });
 });

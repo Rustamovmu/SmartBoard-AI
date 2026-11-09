@@ -1,22 +1,22 @@
-# Connected analysis lifecycle — version 1
+# Connected analysis lifecycle — version 3
 
-Status: future vision lifecycle requirements. The [native connection foundation](analysis-transport.md) now implements authenticated grants and bounded analyze/control sockets, disabled by default. It accepts no images and has no binary media codec or connected worker. A separate [standalone CPU frame core](vision-worker.md) now measures bounded in-memory JPEGs without being connected to Nest. Candidate/save-ack schemas and executable vision validation remain required before any client uses image analysis. Do not generate client types from imagined GraphQL/media operations.
+Status: the default-off [native connection foundation](analysis-transport.md), [version-2 measurement bridge](analysis-media.md), and [version-3 mounted-camera decision lifecycle](analysis-decision-v3.md) are implemented. Version 3 can return transient candidates and advance its in-memory comparison baseline only after a matching acknowledgment. It does not implement phone-side durable saving, handheld tracking or production deployment validation. Do not generate client types from imagined GraphQL/media operations.
 
 The [V1 constants](../src/contracts/platform-v1.ts) and both [backend](../docs/Backend_plan.md) and [frontend](../docs/Frontend_plan.md) plans govern this contract. Breaking wire changes require a protocol-version change and coordinated frontend update.
 
 ## Access and data boundaries
 
 - `POST /analysis/access` now issues endpoint-specific one-use tickets for an enrolled native session when explicitly enabled. No lecture record is created.
-- `/ws/analyze` will carry authenticated transient analysis. Credentials must not appear in query strings. The native-only ticket handshake is specified in the connection contract; browser sockets remain unsupported.
+- `/ws/analyze` carries authenticated transient analysis for version 2 and mounted-camera decision frames for version 3. Credentials must not appear in query strings. The native-only ticket handshake is specified in the connection contract; browser sockets remain unsupported.
 - `/ws/control` will carry enrollment/account status, with no private lecture feed.
 - Messages use `protocolVersion`, an ephemeral `streamId`, `frameId`, `candidateId` when applicable, dimensions and source/monotonic timestamps. Wall-clock platform timestamps are ISO UTC and distinct from source-video times.
 - Never send local titles, notes, OCR catalog, permanent lecture IDs, local paths, full video or audio. Only selected compressed JPEG frames and the permitted reconnect baseline/calibration data may reach analysis in RAM.
 
 ## Required limits
 
-The following media limits remain future requirements; the connection foundation instead caps all commands at 8 KiB and rejects binary input. Maximum compressed JPEG size is 2,000,000 bytes (decimal 2 MB); maximum decoded image size is 16,000,000 pixels. Verify decoded dimensions before costly processing and reject malformed input. Only one frame may be in flight per stream. No backlog or disk queue is allowed; apply backpressure and skip automatic sampling opportunities under load. The phone retains one pending explicit capture action.
+Version 2/3 enforce a 2,000,000-byte JPEG limit, 16,000,000 decoded pixels, one frame in flight per analysis socket, no input backlog, bounded worker/output slots and an 8 KiB control-message limit. See their contracts for exact bounds. No disk queue is allowed; apply backpressure and skip sampling opportunities under load. The phone retains one pending explicit capture action.
 
-Initial targets are five samples/second, two seconds of stability and a three-second capture interval. These are future processing targets, not measured B1 performance. Candidate and session memory budgets, maximum concurrent streams, result-byte limits and handshake/grant expiry must be quantified and tested before enabling B4. Inactivity timeout is 30 seconds.
+The implemented version-3 decision uses a two-second stability interval and three-second post-ack cooldown; it does not set a client sampling cadence or authorize autonomous capture. Candidate and session memory budgets, maximum concurrent streams, result-byte limits and grant expiry are bounded and described in the versioned contracts. Inactivity timeout is 30 seconds.
 
 ## Candidate/local-save acknowledgment
 

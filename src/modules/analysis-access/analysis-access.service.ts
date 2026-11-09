@@ -53,12 +53,17 @@ export class AnalysisAccessService {
       !(
         Object.keys(exactBody).length === 0 ||
         (Object.keys(exactBody).length === 1 &&
-          (exactBody as { protocolVersion?: unknown }).protocolVersion === 2)
+          [2, 3].includes(
+            (exactBody as { protocolVersion?: number }).protocolVersion ?? 0,
+          ))
       ) ||
       request.originalUrl !== '/analysis/access'
     )
       throw new BadRequestException();
-    const version = Object.keys(exactBody).length === 0 ? 1 : 2;
+    const version =
+      Object.keys(exactBody).length === 0
+        ? 1
+        : (exactBody as { protocolVersion: 2 | 3 }).protocolVersion;
     await Promise.all([
       this.schema.assertPrepared(),
       this.devices.assertPrepared(),

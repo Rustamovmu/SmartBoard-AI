@@ -4,6 +4,7 @@ import math
 import threading
 
 import cv2
+import numpy as np
 
 from .contracts import (
     Corners,
@@ -59,6 +60,14 @@ class FrameWorker:
             quality = measure_quality(board)
             enhanced = enhance(board)
             arrays.append(enhanced)
+            signature_gray = cv2.cvtColor(board, cv2.COLOR_BGR2GRAY).astype(
+                np.uint8, copy=False
+            )
+            arrays.append(signature_gray)
+            signature_small = cv2.resize(
+                signature_gray, (48, 32), interpolation=cv2.INTER_AREA
+            ).astype(np.uint8, copy=False)
+            arrays.append(signature_small)
             try:
                 people = self._detector.detect(frame)
                 if people.status == "available" and (
@@ -98,6 +107,7 @@ class FrameWorker:
                 board.shape[0],
                 self._encode(board),
                 self._encode(enhanced),
+                bytearray(signature_small.tobytes()),
                 quality,
                 people,
                 overlap,
