@@ -62,3 +62,12 @@ Changed files in the separate mobile repository:
 - Associated mobile documentation: [AGENTS.md](../../SmartBord-AI-frontend/AGENTS.md), [README.md](../../SmartBord-AI-frontend/README.md), [docs/Connected_analysis.md](../../SmartBord-AI-frontend/docs/Connected_analysis.md), [docs/Verification.md](../../SmartBord-AI-frontend/docs/Verification.md). Final physical-evidence documentation commit: `2a660a7`.
 
 Changed backend files are documentation only: `AGENTS.md`, `README.md`, `contracts/analysis-decision-v3.md`, `docs/Analysis_decision_verification.md`, `docs/Backend_plan.md`, `docs/Development_progress.md`, `docs/Frontend_plan.md`, and `vision/README.md`. The worker README's obsolete statement that Nest sockets still reject all media was corrected to describe the separate default-off bridge; core/interface behavior is unchanged.
+
+
+## 2026-11-10 — Android failure/recovery follow-up
+
+The separate [failure/recovery record](Android_failure_recovery_verification.md) adds scoped SM-S908N / Android 16 evidence for Home pause/camera release/explicit resume with another real worker response, complete-bundle recovery after force-stop before catalog commit/acknowledgment, honest incomplete-candidate recovery with its original preserved, logout and owner device revocation while sampling, offline reopening and native camera denial. A bounded ENOSPC injection checked the clear storage error and zero premature acknowledgments; actual phone disk exhaustion remains unverified. Earlier missed/truncated/misdirected harness attempts and natural expiry observations are retained in that record.
+
+Physical denial exposed a separate mobile error-code presentation defect. The connected panel now recognizes native `code`, keeps unknown diagnostics generic and surfaces rejected/unavailable camera sampling. Mobile TypeScript/lint, 75 tests, production build/native sync, browser privacy, seven Android unit tests and Android build/lint passed; the normal APK's real denial path was retested. No backend/Python runtime, API/schema, application records/configuration or model changed. Both disposable hosts reported guarded database cleanup; the final normal-APK/offline/credential/forwarding cleanup details are in the follow-up record.
+
+The user confirmed no iPhone/full-Xcode environment and no production deployment. iOS compilation/device validation and production TLS/proxy/log/swap/crash-dump/backup auditing therefore could not run; iOS live sampling is also unimplemented. These scoped Android results do not establish full F4 or production acceptance.
