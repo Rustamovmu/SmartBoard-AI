@@ -23,7 +23,7 @@ Success is HTTP 201 with `Cache-Control: no-store`, separate one-use endpoint ti
 {"protocolVersion":3,"capabilities":{"vision":true,"acceptsFrames":true,"captureCandidates":true,"automaticCapture":false}}
 ```
 
-If the media worker is disabled or not ready, grant issuance returns 503 `VISION_UNAVAILABLE`. The grants and session/device binding have the same rate, capacity, expiry, revocation and exact-path rules as version 1. Version 1 `{}` and version 2 `{"protocolVersion":2}` remain compatible. The control socket always advertises `acceptsFrames:false` and stays text-command-only.
+If the media worker is disabled or not ready, grant issuance returns 503 `VISION_UNAVAILABLE` before reserving a stream or issuing endpoint tickets. Versions 2 and 3 share this readiness check; version 1 remains available with vision disabled. The grants and session/device binding have the same rate, capacity, expiry, revocation and exact-path rules as version 1. Version 1 `{}` and version 2 `{"protocolVersion":2}` remain compatible. The control socket always advertises `acceptsFrames:false` and stays text-command-only.
 
 ## Baseline and frame input
 
@@ -81,4 +81,4 @@ Version-3 frames and candidate commands count toward the five-application-messag
 
 `test/analysis-media.integration-spec.ts` exercises the grant and both real loopback sockets against an exact guarded disposable MongoDB database and actual local Python workers. The V3 case sends a synthetic baseline, waits for stable changed frames, receives/retries real JPEG candidates, rejects a stale acknowledgment, confirms an unchanged frame does not generate a candidate, accepts a later candidate and retries the earlier acknowledgment. It does not certify physical camera accuracy, phone-side persistence/recovery, handheld tracking, browser sockets, production TLS/proxy behavior, multiple server instances, or deployment-wide memory/swap/log retention.
 
-The feature remains disabled by default. Before any client uses it, implement local save/recovery and secure credential handling in the separate mobile repository, test the actual phone camera and file/database atomicity, and separately add a verified handheld tracking mode if needed.
+The feature remains disabled by default. The separate Android [client foundation](../../SmartBord-AI-frontend/docs/Connected_analysis.md) now implements secure-session integration, explicit mounted-frame disclosure/setup, local source/derived bundle save/recovery and post-commit acknowledgment. Its synthetic/native-build evidence does not establish physical camera, WSS or phone file/database atomicity. Verify the combined physical path before acceptance, and separately add a verified handheld tracking mode if needed. Reconnection must use the durable source original and its source corners, not an already-rectified candidate.

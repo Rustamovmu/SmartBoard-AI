@@ -385,37 +385,57 @@ describe('authenticated measurement bridge with real workers and disposable Mong
     client.ws.send(Buffer.from([1]));
     expect(await client.closed).toBe(1003);
   });
-  it('requires the separate media flag and prepared/authenticated device ownership', async () => {
-    const owner = await fixture();
-    config.mediaEnabled = false;
-    expect(
-      (
-        await access(owner.target.accessToken, { protocolVersion: 2 }).expect(
-          503,
+  it.each([2, 3])(
+    'requires enabled/ready media and device ownership for protocol %i',
+    async (protocolVersion) => {
+      const owner = await fixture();
+      config.mediaEnabled = false;
+      expect(
+        (
+          await access(owner.target.accessToken, { protocolVersion }).expect(
+            503,
+          )
+        ).body.code,
+      ).toBe('VISION_UNAVAILABLE');
+      config.mediaEnabled = true;
+      const availability = jest
+        .spyOn(media, 'available', 'get')
+        .mockReturnValue(false);
+      expect(
+        (await access(owner.target.accessToken, { protocolVersion }).expect(503))
+          .body.code,
+      ).toBe('VISION_UNAVAILABLE');
+      availability.mockRestore();
+      const issued = (
+        await access(owner.target.accessToken, { protocolVersion }).expect(201)
+      ).body;
+      expect(issued).toMatchObject({
+        protocolVersion,
+        capabilities: { vision: true, acceptsFrames: true },
+      });
+      await access(owner.approver.accessToken, { protocolVersion }).expect(
+        403,
+      );
+      await api()
+        .post('/analysis/access')
+        .set(native)
+        .send({ protocolVersion })
+        .expect(401);
+      await access(owner.target.accessToken, {
+        protocolVersion,
+        notes: 'synthetic-private-marker',
+      }).expect(400);
+      await api()
+        .post('/analysis/access')
+        .set(native)
+        .set('Authorization', `Bearer ${owner.target.accessToken}`)
+        .set('Content-Type', 'application/json')
+        .send(
+          `{"protocolVersion":${protocolVersion},"protocolVersion":${protocolVersion}}`,
         )
-      ).body.code,
-    ).toBe('VISION_UNAVAILABLE');
-    config.mediaEnabled = true;
-    await access(owner.approver.accessToken, { protocolVersion: 2 }).expect(
-      403,
-    );
-    await api()
-      .post('/analysis/access')
-      .set(native)
-      .send({ protocolVersion: 2 })
-      .expect(401);
-    await access(owner.target.accessToken, {
-      protocolVersion: 2,
-      notes: 'synthetic-private-marker',
-    }).expect(400);
-    await api()
-      .post('/analysis/access')
-      .set(native)
-      .set('Authorization', `Bearer ${owner.target.accessToken}`)
-      .set('Content-Type', 'application/json')
-      .send('{"protocolVersion":2,"protocolVersion":2}')
-      .expect(400);
-  });
+        .expect(400);
+    },
+  );
   it('returns actual binary measurements/images and supports sequential fresh frames', async () => {
     const owner = await fixture();
     const issued = await grant(owner.target.accessToken);

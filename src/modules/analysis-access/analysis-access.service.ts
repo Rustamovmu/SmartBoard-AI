@@ -74,7 +74,7 @@ export class AnalysisAccessService {
     const account = await this.sessions.authenticate(raw, 'native');
     await this.limits.consume('analysis:grant:account', account.user._id, 10);
     if (!account.deviceId) throw new ForbiddenException();
-    if (version === 2 && (!this.config.mediaEnabled || !this.media.available))
+    if (version >= 2 && (!this.config.mediaEnabled || !this.media.available))
       throw new VisionUnavailableException();
     const binding = {
       sessionId: account.sessionId,
