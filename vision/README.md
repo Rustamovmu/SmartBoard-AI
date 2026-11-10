@@ -2,7 +2,7 @@
 
 This first B4 increment measures one bounded JPEG in RAM. It validates confirmed source corners, rectifies the board, measures appearance quality, runs real YOLO11n person inference on the current source frame, estimates person-box overlap and returns separate rectified/enhanced JPEG bytes. It has no listener, database, lecture catalog, file-output API, baseline, automatic capture or Nest bridge.
 
-The existing Nest sockets still reject media and report unavailable vision. Do not enable the application transport as a way to use this package. [Internal contract](../contracts/vision-worker.md), [verification and remaining work](../docs/Vision_worker_verification.md).
+The separate default-off Nest [media bridge](../contracts/analysis-media.md) now connects isolated workers to native V2 measurements and the [V3 mounted decision lifecycle](../contracts/analysis-decision-v3.md). Preparing or directly testing this core does not enable application transport. Use the [dated decision evidence](../docs/Analysis_decision_verification.md) for the scoped Android happy path and remaining acceptance. [Internal core contract](../contracts/vision-worker.md), [core verification](../docs/Vision_worker_verification.md).
 
 ## Reproduce the verified environment
 
@@ -28,7 +28,7 @@ Create and reuse `FrameWorker` from `smartbord_vision.worker` with `vision/` on 
 
 The result includes source/output dimensions, measured quality, actual normalized person boxes/confidences or an unavailable reason, nullable box-overlap fraction and the two JPEG byte strings. `tracking` stays `unverified` and `automatic_capture_eligible` stays `False`. Never treat a returned result as a phone save or an automatic capture candidate. Never log, serialize to telemetry or persist the frame/result; only the recording phone may own durable lecture data.
 
-Only one call may be in flight per worker. A competing call/close fails immediately; no work queue exists. Reuse the loaded CPU detector, then call `close()` after outstanding work finishes. This synchronous core does not implement cancellation or a worker-process timeout; those are requirements for the future bridge. Results are caller-owned RAM bytes and must be released by that caller. The worker retains no per-frame history or accepted baseline.
+Only one call may be in flight per worker. A competing call/close fails immediately; no work queue exists. Reuse the loaded CPU detector, then call `close()` after outstanding work finishes. This synchronous core does not implement cancellation or a worker-process timeout; the separate Nest bridge supervises its isolated worker processes with bounded deadlines. Results are caller-owned RAM bytes and must be released by that caller. The worker retains no per-frame history or accepted baseline.
 
 ## Validate
 
